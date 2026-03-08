@@ -7,6 +7,7 @@
 터미널 실행
 주소 이동 - 폴더 주소로 이동
 터미널 명령어입력
+git pull
 git add .
 git commit -m "메모내용남기기"
 git push
