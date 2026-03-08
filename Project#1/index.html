@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vampire Survivors HTML5</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- TOP 80% -->
+        <div id="canvas-area">
+            <canvas id="game-canvas" width="1280" height="576"></canvas>
+            <!-- UI Overlays for inside canvas only (Menus/Game Over) -->
+            <div id="ui-layer">
+                <div id="main-menu" class="screen">
+                    <h1>Survive the Night</h1>
+                    <p>Choose your starting weapon:</p>
+                    <div class="weapon-choices">
+                        <button id="btn-sniper">Sniper (Long Range)</button>
+                        <button id="btn-balance">Balance (Mid Range)</button>
+                        <button id="btn-bruiser">Bruiser (Short Range)</button>
+                    </div>
+                </div>
+
+                <div id="levelup-screen" class="screen hidden">
+                    <h2>Level Up!</h2>
+                    <div class="stat-choices">
+                        <button id="btn-stat-hp">Max HP +10%</button>
+                        <button id="btn-stat-atk">Attack Power +10%</button>
+                        <button id="btn-stat-def">Defense +10%</button>
+                        <button id="btn-stat-spd">Move Speed +10%</button>
+                        <button id="btn-stat-aspd">Attack Speed +10%</button>
+                    </div>
+                </div>
+
+                <div id="gameover-screen" class="screen hidden">
+                    <h2>Game Over</h2>
+                    <p>You survived for <span id="final-time">00:00</span></p>
+                    <div id="revive-prompt">
+                        <p>Revive once with 50% HP?</p>
+                        <button id="btn-revive">Revive</button>
+                    </div>
+                    <br>
+                    <button id="btn-restart">Restart fully</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- BOTTOM 20% HUD -->
+        <div id="ui-area">
+            <div id="hud">
+                <div class="hud-center-group">
+                    <div id="level-display">Lv: 1</div>
+                    <div id="hp-bar-container">
+                        <div id="hp-bar-fill"></div>
+                        <span id="hp-text">100 / 100</span>
+                    </div>
+                    <div id="exp-bar-container">
+                        <div id="exp-bar-fill"></div>
+                        <span id="exp-text">0 / 10</span>
+                    </div>
+                    <div class="stats-panel">
+                        <span id="stat-atk">ATK: 10</span>
+                        <span id="stat-def">DEF: 0</span>
+                        <span id="stat-spd">SPD: 150</span>
+                        <span id="stat-aspd">ASPD: 1.00x</span>
+                    </div>
+                </div>
+                <div id="time-display">00:00</div>
+            </div>
+        </div>
+    </div>
+
+            <div id="gameover-screen" class="screen hidden">
+                <h2>Game Over</h2>
+                <p>You survived for <span id="final-time">00:00</span></p>
+                <div id="revive-prompt">
+                    <p>Revive once with 50% HP?</p>
+                    <button id="btn-revive">Revive</button>
+                </div>
+                <br>
+                <button id="btn-restart">Restart fully</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engine -->
+    <script src="src/engine/Input.js"></script>
+    <script src="src/engine/Pool.js"></script>
+    
+    <!-- Systems (Stubs for now) -->
+    <script src="src/systems/EffectPool.js"></script>
+    <script src="src/systems/Collision.js"></script>
+    <script src="src/systems/WaveManager.js"></script>
+    <script src="src/systems/UpgradeSystem.js"></script>
+    
+    <!-- Entities (Stubs for now) -->
+    <script src="src/entities/Weapon.js"></script>
+    <script src="src/entities/Player.js"></script>
+    <script src="src/entities/Enemy.js"></script>
+    <script src="src/entities/Gem.js"></script>
+    
+    <!-- Main Loop -->
+    <script src="src/main.js"></script>
+</body>
+</html>
