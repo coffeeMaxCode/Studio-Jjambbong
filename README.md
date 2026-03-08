@@ -5,7 +5,8 @@
 
 -- git 명령어
 터미널 실행
-주소 이동 - 폴더 주소로 이동
+주소 이동 - 폴더 주소로 이동 : 폴더 주소 입력
+cd C:\Studio-Jjambbong
 터미널 명령어입력
 git pull
 git add .
