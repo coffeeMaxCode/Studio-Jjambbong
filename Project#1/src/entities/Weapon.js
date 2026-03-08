@@ -34,7 +34,7 @@ class Projectile {
 
         const dx = targetX - x;
         const dy = targetY - y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) {
             this.vx = (dx / dist) * speed;
             this.vy = (dy / dist) * speed;
@@ -61,18 +61,26 @@ class Projectile {
 
             const dx = enemy.x - this.x;
             const dy = enemy.y - this.y;
-            const distSq = dx*dx + dy*dy;
+            const distSq = dx * dx + dy * dy;
             const rSum = this.radius + enemy.radius;
 
             if (distSq < rSum * rSum) {
                 let finalDamage = this.damage;
                 if (this.type === 'Sniper') {
-                    const travelSq = (this.x - this.originX)**2 + (this.y - this.originY)**2;
+                    const travelSq = (this.x - this.originX) ** 2 + (this.y - this.originY) ** 2;
                     const travel = Math.sqrt(travelSq);
-                    finalDamage += Math.floor(travel / 50);
+                    // 거리가 멀수록 데미지 증가 (100유닛당 +10 데미지 예시, 기획에 맞춰 조정 가능)
+                    finalDamage += Math.floor(travel / 50) * 5;
                 }
 
-                enemy.takeDamage(finalDamage);
+                let knockbackDx, knockbackDy, forceSpeed;
+                if (this.type === 'Dagger') {
+                    knockbackDx = this.vx;
+                    knockbackDy = this.vy;
+                    forceSpeed = 400 + (this.bonusKnockback || 0); // Strong knockback for Dagger
+                }
+
+                enemy.takeDamage(finalDamage, knockbackDx, knockbackDy, forceSpeed);
                 this.hitEnemies.push(enemy);
                 this.pierce--;
 
@@ -87,7 +95,14 @@ class Projectile {
     draw(ctx) {
         if (!this.active) return;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+        if (this.type === 'Dagger') {
+            const angle = Math.atan2(this.vy, this.vx);
+            // 전방 180도 반원형 (부채꼴)
+            ctx.arc(this.x, this.y, this.radius, angle - Math.PI / 2, angle + Math.PI / 2);
+            ctx.lineTo(this.x, this.y);
+        } else {
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        }
         ctx.fillStyle = this.color;
         ctx.fill();
     }
@@ -103,6 +118,7 @@ class Weapon {
 
         this.level = 1;
         this.bonusPower = 0;
+        this.bonusKnockback = 0;
         this.speedMultiplier = 1.0;
         this.bonusRadius = 0;
         this.bonusBullets = 0; // For Shotgun (starts with +0, base is 2)
@@ -121,21 +137,47 @@ class Weapon {
         } else {
             console.warn(`No stats found for weapon type: ${type}`);
         }
+
+        // 샷건 전용: 초기 벌어짐 각도 15도
+        if (this.type === 'Shotgun') {
+            this.shotgunSpread = 15;
+        }
+
+        // 재장전 시스템 초기화
+        this.shotsFired = 0;
+        this.reloadTimer = 0;
+        this.baseReloadTime = 0;
+        this.maxShots = 0;
+
+        if (this.type === 'Shotgun') {
+            this.maxShots = 3;
+            this.baseReloadTime = 2.0;
+        } else if (this.type === 'Sniper') {
+            this.maxShots = 5;
+            this.baseReloadTime = 3.0;
+        }
     }
 
     update(dt, player, waveManager) {
-        this.cooldownTimer -= dt;
+        // 재장전 중이면 타이머만 감소시키고 공격 로직 skip
+        if (this.reloadTimer > 0) {
+            this.reloadTimer -= dt;
+        } else {
+            // 공격 쿨다운 및 사격 로직
+            const effectiveCooldown = (this.cooldown / this.speedMultiplier) / (player.attackSpeed * player.buffMultipliers.aspd);
 
-        const effectiveCooldown = (this.cooldown / this.speedMultiplier) / player.attackSpeed;
-
-        if (this.cooldownTimer <= 0 && waveManager) {
-            const target = this.findNearestEnemy(player, waveManager);
-            if (target) {
-                this.fire(player, target);
-                this.cooldownTimer = effectiveCooldown;
+            if (this.cooldownTimer <= 0 && waveManager) {
+                const target = this.findNearestEnemy(player, waveManager);
+                if (target) {
+                    this.fire(player, target);
+                    this.cooldownTimer = effectiveCooldown;
+                }
+            } else if (this.cooldownTimer > 0) {
+                this.cooldownTimer -= dt;
             }
         }
 
+        // 이미 발사된 투사체 업데이트 (재장전 중에도 멈추지 않음)
         for (let i = this.activeProjectiles.length - 1; i >= 0; i--) {
             const p = this.activeProjectiles[i];
             p.update(dt, waveManager);
@@ -149,16 +191,26 @@ class Weapon {
     upgrade() {
         this.level++;
         if (this.type === 'Dagger') {
-            this.bonusRadius += 10;
-            this.speedMultiplier *= 1.1;
-            this.bonusPower += 5;
+            this.bonusRadius += 5; // Reduced from 10
+            this.speedMultiplier *= 1.055; // Changed from 1.1
+            this.bonusPower += 1.5; // Reduced from 2.5
+            this.bonusKnockback += 20;
         } else if (this.type === 'Shotgun') {
             this.bonusBullets += 1;
             this.speedMultiplier *= 1.1;
-            this.bonusPower += 3;
+            this.bonusPower += 1.5; // Halved from 3
+            // 레벨업마다 5도씩 증가 (최대 60도)
+            if (this.shotgunSpread < 60) {
+                this.shotgunSpread = Math.min(60, this.shotgunSpread + 5);
+            }
         } else if (this.type === 'Sniper') {
-            this.bonusPower += 10;
+            this.bonusPower += 5; // Halved from 10
             this.speedMultiplier *= 1.1;
+        }
+
+        // 재장전 시간 단축 (최소 0.5초 고정)
+        if (this.baseReloadTime > 0.5) {
+            this.baseReloadTime = Math.max(0.5, this.baseReloadTime - 0.5);
         }
     }
 
@@ -172,17 +224,24 @@ class Weapon {
         let nearest = null;
         let minDistSq = Infinity;
 
-        // 생성자에서 설정된 Config의 maxDistSq 사용
         const currentMaxDistSq = this.maxDistSq || Infinity;
+
+        // 플레이어가 바라보는 방향의 각도
+        const playerAngle = Math.atan2(player.facingY, player.facingX);
 
         for (const enemy of waveManager.activeEnemies) {
             if (!enemy.active) continue;
 
             const dx = enemy.x - player.x;
             const dy = enemy.y - player.y;
-            const distSq = dx*dx + dy*dy;
+            const distSq = dx * dx + dy * dy;
 
-            if (distSq < minDistSq && distSq <= currentMaxDistSq) {
+            // 거리 필터링
+            if (distSq > currentMaxDistSq) continue;
+
+            // 각도 필터링 제거 (모든 무기가 가장 가까운 적을 무조건 타겟팅)
+
+            if (distSq < minDistSq) {
                 minDistSq = distSq;
                 nearest = enemy;
             }
@@ -191,24 +250,38 @@ class Weapon {
     }
 
     fire(player, target) {
+        if (this.reloadTimer > 0) return; // 재장전 중이면 발사 불가
+
+        this.cooldownTimer = this.cooldown;
         const actualDamage = this.baseDamage + this.bonusPower + player.attackPower;
         const actualRadius = this.projRadius + this.bonusRadius;
+
+        // 사격 횟수 증가 및 재장전 트리거
+        if (this.maxShots > 0) {
+            this.shotsFired++;
+            if (this.shotsFired >= this.maxShots && this.baseReloadTime > 0) {
+                this.reloadTimer = this.baseReloadTime;
+                this.shotsFired = 0;
+            }
+        }
 
         if (this.type === 'Shotgun') {
             // 산탄총 형태
             const dx = target.x - player.x;
             const dy = target.y - player.y;
             const baseAngle = Math.atan2(dy, dx);
-            
+
             const totalBullets = 2 + this.bonusBullets;
-            const spreadAngleDeg = 15;
-            const startAngleDeg = -spreadAngleDeg * (totalBullets - 1) / 2;
+            // 현재 벌어짐 각도(shotgunSpread)를 탄환 수에 맞춰 분배
+            const currentSpread = this.shotgunSpread;
+            const spreadAngleDeg = currentSpread / (totalBullets > 1 ? totalBullets - 1 : 1);
+            const startAngleDeg = -currentSpread / 2;
 
             for (let i = 0; i < totalBullets; i++) {
                 const p = this.projectilePool.get();
-                const offsetDeg = startAngleDeg + i * spreadAngleDeg;
+                const offsetDeg = startAngleDeg + (totalBullets > 1 ? i * spreadAngleDeg : currentSpread / 2);
                 const rad = baseAngle + (offsetDeg * Math.PI / 180);
-                
+
                 const targetX = player.x + Math.cos(rad) * 100;
                 const targetY = player.y + Math.sin(rad) * 100;
 
@@ -218,6 +291,7 @@ class Weapon {
                     this.projSpeed, this.projDuration, actualDamage,
                     actualRadius, this.color, this.type, this.pierce
                 );
+                p.bonusKnockback = this.bonusKnockback;
                 this.activeProjectiles.push(p);
             }
         } else {
@@ -228,6 +302,7 @@ class Weapon {
                 this.projSpeed, this.projDuration, actualDamage,
                 actualRadius, this.color, this.type, this.pierce
             );
+            p.bonusKnockback = this.bonusKnockback;
             this.activeProjectiles.push(p);
         }
     }

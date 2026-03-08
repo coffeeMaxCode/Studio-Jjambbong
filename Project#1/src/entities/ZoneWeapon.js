@@ -15,6 +15,7 @@ class ActiveZone {
         this.damage = 0;
         this.color = 'rgba(255,100,0,0.35)';
         this.followPlayer = false;
+        this.hitEnemies = []; // 해당 장판에 이미 맞은 적 목록
     }
 }
 
@@ -29,24 +30,25 @@ class ZoneWeapon {
         this.activeZones = [];
         this.speedMultiplier = 1.0;
 
-        if (type === 'Grenade') {
+        if (this.type === 'Grenade') {
             this.deployTimer = 0;       // 0이면 즉시 첫 배치
             this.deployInterval = 3.0;  // 3초마다 새 장판 배치
             this.zoneRadius = 70;
-            this.zoneDuration = 3.0;
-            this.baseDamage = 15;
-            this.tickInterval = 0.5;
-        } else {
+            this.zoneDuration = 0.1;    // 0.1초 지속 (즉발 느낌)
+            this.baseDamage = 50;       // 폭발형이므로 데미지 상향 조정
+            this.tickInterval = 0.05;   // 매우 빠른 체크
+        } else if (this.type === 'Radiation') {
             // Radiation (오라형): 즉시 영구 장판 생성
             this.zoneRadius = 80;
-            this.baseDamage = 8;
-            this.tickInterval = 0.5;
+            this.baseDamage = 5;
+            this.tickInterval = 1.0;
 
             const aura = new ActiveZone();
             aura.active = true;
             aura.radius = this.zoneRadius;
             aura.duration = -1;
             aura.tickInterval = this.tickInterval;
+            aura.tickTimer = this.tickInterval; // 초기 틱 타이머 설정
             aura.followPlayer = true;
             aura.color = 'rgba(138,43,226,0.25)';
             this.activeZones.push(aura);
@@ -57,15 +59,15 @@ class ZoneWeapon {
     upgrade() {
         this.level++;
         this.speedMultiplier *= 1.1; // 공격속도 증가 (쿨타임 감소)
-        
+
         if (this.type === 'Grenade') {
-            this.baseDamage += 10;
-            this.zoneRadius += 20; 
+            this.baseDamage += 5; // Halved from 10 (originally 20)
+            this.zoneRadius += 20;
             this.tickInterval *= 0.9;
-        } else {
-            this.baseDamage += 5;
-            this.zoneRadius += 30; 
-            this.tickInterval *= 0.9;
+        } else if (this.type === 'Radiation') {
+            this.baseDamage += 0.625; // Halved from 1.25 (originally 2.5)
+            this.zoneRadius += 7;
+            this.tickInterval *= 0.9; // Match the 10% tooltip reduction
             // 오라 반경 즉시 반영 및 틱 갱신
             if (this.activeZones[0]) {
                 this.activeZones[0].radius = this.zoneRadius;
@@ -77,11 +79,13 @@ class ZoneWeapon {
     update(dt, player, waveManager) {
         // 설치형: 쿨다운마다 새 장판 배치
         if (this.type === 'Grenade') {
-            this.deployTimer -= dt;
             const effectiveCooldown = this.deployInterval / this.speedMultiplier;
             if (this.deployTimer <= 0) {
-                this._deployTargetedZone(player, waveManager);
-                this.deployTimer = effectiveCooldown;
+                if (this._deployTargetedZone(player, waveManager)) {
+                    this.deployTimer = effectiveCooldown;
+                }
+            } else if (this.deployTimer > 0) {
+                this.deployTimer -= dt;
             }
         }
 
@@ -98,11 +102,17 @@ class ZoneWeapon {
                 zone.y = player.y;
             }
 
-            // 틱 데미지: 0.5초마다 범위 내 모든 적에게 피해
-            zone.tickTimer -= dt;
-            if (zone.tickTimer <= 0) {
-                zone.tickTimer = zone.tickInterval;
-                this._applyTickDamage(zone, player, waveManager);
+            // 틱/즉시 데미지 처리
+            if (this.type === 'Grenade') {
+                // 수류탄: 지속 시간 동안 범위 내 적에게 즉시 1회 피해
+                this._applyInstantDamage(zone, player, waveManager);
+            } else {
+                // 오라형 등 기존 틱 방식
+                zone.tickTimer -= dt;
+                if (zone.tickTimer <= 0) {
+                    zone.tickTimer = zone.tickInterval;
+                    this._applyTickDamage(zone, player, waveManager);
+                }
             }
 
             // 지속 시간 처리 (영구 장판은 duration = -1)
@@ -115,23 +125,46 @@ class ZoneWeapon {
         }
     }
 
+    _applyInstantDamage(zone, player, waveManager) {
+        const damage = zone.damage;
+        for (const enemy of waveManager.activeEnemies) {
+            if (!enemy.active || zone.hitEnemies.includes(enemy)) continue;
+
+            const dx = enemy.x - zone.x;
+            const dy = enemy.y - zone.y;
+            const rSum = zone.radius + enemy.radius;
+            if (dx * dx + dy * dy <= rSum * rSum) {
+                enemy.takeDamage(damage);
+                zone.hitEnemies.push(enemy);
+            }
+        }
+    }
+
     _deployTargetedZone(player, waveManager) {
-        // 가장 가까운 적 위치에 배치, 없으면 플레이어 주변 랜덤
         let tx = player.x + (Math.random() - 0.5) * 300;
         let ty = player.y + (Math.random() - 0.5) * 300;
 
         let minDistSq = Infinity;
+        let foundTarget = false;
+        const maxDistSq = 800 * 800; // Screen-wide range
+
         for (const e of waveManager.activeEnemies) {
             if (!e.active) continue;
             const dx = e.x - player.x;
             const dy = e.y - player.y;
-            const dSq = dx*dx + dy*dy;
+            const dSq = dx * dx + dy * dy;
+
+            if (dSq > maxDistSq) continue;
+
             if (dSq < minDistSq) {
                 minDistSq = dSq;
                 tx = e.x;
                 ty = e.y;
+                foundTarget = true;
             }
         }
+
+        if (!foundTarget) return false;
 
         const zone = new ActiveZone();
         zone.active = true;
@@ -141,15 +174,17 @@ class ZoneWeapon {
         zone.duration = this.zoneDuration;
         zone.tickTimer = 0;             // 배치 즉시 첫 틱 발동
         zone.tickInterval = this.tickInterval;
-        zone.damage = this.baseDamage + Math.floor(player.attackPower);
+        zone.damage = this.baseDamage + player.attackPower;
         zone.followPlayer = false;
-        zone.color = 'rgba(255,100,0,0.35)';
+        zone.color = 'rgba(255,100,0,0.6)'; // 폭발이므로 좀 더 진하게
+        zone.hitEnemies = [];
         this.activeZones.push(zone);
+        return true;
     }
 
     _applyTickDamage(zone, player, waveManager) {
         const damage = zone.followPlayer
-            ? this.baseDamage + Math.floor(player.attackPower * 0.5)
+            ? this.baseDamage + player.attackPower
             : zone.damage;
 
         const textColor = zone.followPlayer ? '#a855f7' : '#f97316';
@@ -158,7 +193,8 @@ class ZoneWeapon {
             if (!enemy.active) continue;
             const dx = enemy.x - zone.x;
             const dy = enemy.y - zone.y;
-            if (dx*dx + dy*dy <= zone.radius * zone.radius) {
+            const rSum = zone.radius + enemy.radius;
+            if (dx * dx + dy * dy <= rSum * rSum) {
                 enemy.takeDamage(damage);
             }
         }

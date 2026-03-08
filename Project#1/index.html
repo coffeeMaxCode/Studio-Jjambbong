@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vampire Survivors HTML5</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div id="game-container">
         <!-- 플레이 영역: 1280x720 (기존 전체 화면 크기) -->
@@ -19,7 +21,7 @@
                     <div class="weapon-choices">
                         <button id="btn-sniper">저격 (Sniper)</button>
                         <button id="btn-balance">샷건 (Shotgun)</button>
-                        <button id="btn-bruiser">단검 (Dagger)</button>
+                        <button id="btn-bruiser">대검 (Greatsword)</button>
                         <button id="btn-start-aura">방사능 (Radiation)</button>
                         <button id="btn-start-targeted">수류탄 (Grenade)</button>
                     </div>
@@ -27,29 +29,60 @@
 
                 <div id="levelup-screen" class="screen hidden">
                     <h2>Level Up!</h2>
-                    <div class="stat-choices">
-                        <button id="btn-stat-hp">Max HP +10</button>
-                        <button id="btn-stat-atk">Attack Power +5</button>
-                        <button id="btn-stat-def">Defense +1</button>
-                        <button id="btn-stat-spd">Move Speed +15</button>
-                        <button id="btn-stat-aspd">Attack Speed +0.1x</button>
-                        <button id="btn-stat-zone-targeted">Zone: 수류탄 (Targeted)</button>
-                        <button id="btn-stat-zone-aura">Zone: 방사능 (Aura)</button>
-                        <button id="btn-stat-wpn-sniper">Weapon: 저격 (Sniper)</button>
-                        <button id="btn-stat-wpn-balance">Weapon: 샷건 (Shotgun)</button>
-                        <button id="btn-stat-wpn-bruiser">Weapon: 단검 (Dagger)</button>
+                    <div class="upgrade-container">
+                        <div class="upgrade-column">
+                            <h3>Stats</h3>
+                            <button id="btn-stat-hp">Max HP +10</button>
+                            <button id="btn-stat-atk">Attack Power +5</button>
+                            <button id="btn-stat-def">Defense +1</button>
+                            <button id="btn-stat-spd">Move Speed +15</button>
+                            <button id="btn-stat-aspd">Attack Speed +0.1x</button>
+                            <button id="btn-stat-magnet">Magnet Radius +30</button>
+                            <button id="btn-stat-hpregen">HP Regen +0.1/s</button>
+                        </div>
+                        <div class="upgrade-column">
+                            <h3>Weapons</h3>
+                            <button id="btn-stat-wpn-bruiser">대검 (Greatsword)</button>
+                            <button id="btn-stat-wpn-sniper">저격 (Sniper)</button>
+                            <button id="btn-stat-wpn-balance">샷건 (Shotgun)</button>
+                            <button id="btn-stat-zone-targeted">수류탄 (Grenade)</button>
+                            <button id="btn-stat-zone-aura">방사능 (Radiation)</button>
+                        </div>
                     </div>
                 </div>
 
                 <div id="gameover-screen" class="screen hidden">
                     <h2>Game Over</h2>
                     <p>You survived for <span id="final-time">00:00</span></p>
-                    <div id="revive-prompt">
-                        <p>Revive once with 50% HP?</p>
-                        <button id="btn-revive">Revive</button>
+                    <div style="display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+                        <div id="revive-prompt" style="text-align: center;">
+                            <p style="margin-bottom: 5px; color: #f1c40f;">Revive once with 50% HP?</p>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button id="btn-revive">Revive</button>
+                            <button id="btn-restart">Restart</button>
+                        </div>
                     </div>
-                    <br>
-                    <button id="btn-restart">Restart fully</button>
+                </div>
+
+                <div id="pause-screen" class="screen hidden">
+                    <h2>Paused</h2>
+                    <div class="upgrade-container">
+                        <div class="upgrade-column">
+                            <h3>Stats</h3>
+                            <div id="pause-stats-list"
+                                style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+                        </div>
+                        <div class="upgrade-column">
+                            <h3>Weapons</h3>
+                            <div id="pause-weapons-list"
+                                style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; display: flex; gap: 20px;">
+                        <button id="btn-pause-resume">Resume</button>
+                        <button id="btn-pause-restart">Restart</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -72,6 +105,8 @@
                         <span id="stat-def">DEF: 0</span>
                         <span id="stat-spd">SPD: 150</span>
                         <span id="stat-aspd">ASPD: 1.00x</span>
+                        <span id="stat-magnet">MAG: 100</span>
+                        <span id="stat-hpregen">REG: 0/s</span>
                     </div>
                 </div>
                 <div id="time-display">00:00</div>
@@ -102,4 +137,5 @@
     <!-- 메인 루프 -->
     <script src="src/main.js"></script>
 </body>
+
 </html>
