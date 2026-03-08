@@ -6,7 +6,7 @@ class Gem {
         this.expAmount = 1;
         this.radius = 4;
         this.isBeingMagnetized = false;
-        this.magnetSpeed = 400; // pixels per second when flying to player
+        this.magnetSpeed = 400; // 플레이어에게 날아갈 때의 초당 픽셀 이동 속도
         this.color = '#3498db';
         
         if (!Gem.imgGem) {
@@ -22,12 +22,15 @@ class Gem {
         this.expAmount = amount;
         this.isBeingMagnetized = false;
         
-        // Color based on amount
-        if (amount >= 5) {
-            this.color = '#f1c40f'; // Yellow for big exp
+        // 경험치 양에 따른 색상 설정
+        if (amount >= 10) {
+            this.color = '#e74c3c'; // 특대 경험치는 빨간색 (또는 루비색)
+            this.radius = 8;
+        } else if (amount >= 5) {
+            this.color = '#f1c40f'; // 큰 경험치는 노란색
             this.radius = 6;
         } else {
-            this.color = '#3498db'; // Blue for small
+            this.color = '#3498db'; // 작은 경험치는 파란색
             this.radius = 4;
         }
     }
@@ -38,20 +41,21 @@ class Gem {
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         const distSq = dx*dx + dy*dy;
+        const dist = Math.sqrt(distSq);
 
-        // Check if inside magnet radius, or already magnetized
+        // 자석 반경 내에 있거나 이미 자석 효과를 받고 있는지 확인
         if (this.isBeingMagnetized || distSq < player.magnetRadius * player.magnetRadius) {
             this.isBeingMagnetized = true;
             
-            // Fly towards player
-            const dist = Math.sqrt(distSq);
+            // 플레이어를 향해 날아감
             if (dist > 0) {
-                this.x += (dx / dist) * this.magnetSpeed * dt;
-                this.y += (dy / dist) * this.magnetSpeed * dt;
+                // 자석 효과 시 매우 빠르게 이동
+                this.x += (dx / dist) * 1500 * dt;
+                this.y += (dy / dist) * 1500 * dt;
             }
 
-            // Check collision with player for pickup
-            const collectDist = player.radius + this.radius;
+            // 충돌 확인 (획득) - 충돌 판정 반경도 약간 넉넉하게
+            const collectDist = player.radius + this.radius + 10; // 넉넉한 충돌 반경
             if (distSq < collectDist * collectDist) {
                 player.gainExp(this.expAmount);
                 this.active = false;
@@ -64,11 +68,11 @@ class Gem {
         
         if (Gem.imgGem && Gem.imgGem.complete && Gem.imgGem.naturalWidth > 0) {
             const size = this.radius * 3;
-            // Draw larger for Big Gem naturally because radius is higher 
+            // 반경이 크기 때문에 큰 보석은 자연스럽게 더 크게 렌더링됨 
             ctx.drawImage(Gem.imgGem, this.x - size/2, this.y - size/2, size, size);
         } else {
             ctx.beginPath();
-            // Diamond shape
+            // 다이아몬드 모양
             ctx.moveTo(this.x, this.y - this.radius);
             ctx.lineTo(this.x + this.radius, this.y);
             ctx.lineTo(this.x, this.y + this.radius);

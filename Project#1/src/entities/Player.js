@@ -1,20 +1,21 @@
 class Player {
-    constructor(x, y) {
+    constructor(x, y, game) {
+        this.game = game;
         this.x = x;
         this.y = y;
-        this.radius = 18;
+        this.radius = 56; // Doubled from 28
 
         this.img = new Image();
-        this.img.src = 'assets/player.svg';
+        this.img.src = 'src/img/character001.png';
 
-        // Base Stats
+        // 기본 스탯
         this.baseMaxHp = 100;
         this.baseAttackPower = 10;
         this.baseDefense = 0;
         this.baseMoveSpeed = 150;
         this.baseAttackSpeed = 1.0;
 
-        // Current Stats
+        // 현재 스탯
         this.maxHp = this.baseMaxHp;
         this.hp = this.maxHp;
         this.attackPower = this.baseAttackPower;
@@ -22,21 +23,24 @@ class Player {
         this.moveSpeed = this.baseMoveSpeed;
         this.attackSpeed = this.baseAttackSpeed;
 
-        // State
+        // 업그레이드 수치 트래킹
+        this.aspdUpgradeAmount = 0.1;
+
+        // 상태
         this.isDead = false;
         this.hasRevived = false;
 
-        // i-frames
+        // 무적 시간(i-frames)
         this.invincibleTimer = 0;
 
-        // Exp / Level
+        // 경험치 / 레벨
         this.level = 1;
         this.exp = 0;
         this.expToNext = 10;
         this.magnetRadius = 100;
 
-        // 무기
-        this.weapon = null;
+        // 무기 목록 (일반 투사체 무기 배열)
+        this.weapons = [];
 
         // 장판 무기 목록 (ZoneWeapon 인스턴스 배열)
         this.zoneWeapons = [];
@@ -54,7 +58,7 @@ class Player {
         this.x += axis.x * this.moveSpeed * dt;
         this.y += axis.y * this.moveSpeed * dt;
 
-        // 경계 클램핑 (Canvas 1280x720)
+        // 맵 경계 제한 (Canvas 1280x720)
         const padding = this.radius;
         if (this.x < padding) this.x = padding;
         if (this.x > 1280 - padding) this.x = 1280 - padding;
@@ -62,8 +66,8 @@ class Player {
         if (this.y > 720 - padding) this.y = 720 - padding;
 
         // 일반 무기 업데이트
-        if (this.weapon) {
-            this.weapon.update(dt, this, waveManager);
+        for (const w of this.weapons) {
+            w.update(dt, this, waveManager);
         }
 
         // 장판 무기 업데이트
@@ -87,7 +91,7 @@ class Player {
 
         // 플레이어 스프라이트
         if (this.img.complete && this.img.naturalWidth > 0) {
-            ctx.drawImage(this.img, this.x - 32, this.y - 32, 64, 64);
+            ctx.drawImage(this.img, this.x - 40.5, this.y - 54, 81, 108); // 162x216의 절반 크기
         } else {
             ctx.fillStyle = '#3498db';
             ctx.beginPath();
@@ -98,8 +102,8 @@ class Player {
         ctx.globalAlpha = 1.0;
 
         // 일반 무기 발사체
-        if (this.weapon) {
-            this.weapon.draw(ctx);
+        for (const w of this.weapons) {
+            w.draw(ctx);
         }
     }
 
@@ -130,8 +134,8 @@ class Player {
         this.hp = 0;
         this.isDead = true;
         this.updateHpUI();
-        if (window.triggerGameOver) {
-            window.triggerGameOver();
+        if (this.game) {
+            this.game.triggerGameOver();
         }
     }
 
@@ -159,8 +163,8 @@ class Player {
         this.level++;
         this.expToNext = Math.floor(this.expToNext * 1.25); // 기존 50% 증가에서 25%로 완화
         document.getElementById('level-display').innerText = `Lv: ${this.level}`;
-        if (window.triggerLevelUp) {
-            window.triggerLevelUp();
+        if (this.game) {
+            this.game.triggerLevelUp();
         }
         if (this.exp >= this.expToNext) {
             // 연속 레벨업은 UpgradeSystem에서 처리

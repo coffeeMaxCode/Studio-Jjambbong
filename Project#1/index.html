@@ -11,28 +11,33 @@
         <!-- 플레이 영역: 1280x720 (기존 전체 화면 크기) -->
         <div id="canvas-area">
             <canvas id="game-canvas" width="1280" height="720"></canvas>
-            <!-- UI Overlays (Menus / Game Over) -->
+            <!-- UI 오버레이 (메뉴 / 게임 오버) -->
             <div id="ui-layer">
                 <div id="main-menu" class="screen">
                     <h1>Survive the Night</h1>
                     <p>Choose your starting weapon:</p>
                     <div class="weapon-choices">
-                        <button id="btn-sniper">Sniper (Long Range)</button>
-                        <button id="btn-balance">Balance (Mid Range)</button>
-                        <button id="btn-bruiser">Bruiser (Short Range)</button>
+                        <button id="btn-sniper">저격 (Sniper)</button>
+                        <button id="btn-balance">샷건 (Shotgun)</button>
+                        <button id="btn-bruiser">단검 (Dagger)</button>
+                        <button id="btn-start-aura">방사능 (Radiation)</button>
+                        <button id="btn-start-targeted">수류탄 (Grenade)</button>
                     </div>
                 </div>
 
                 <div id="levelup-screen" class="screen hidden">
                     <h2>Level Up!</h2>
                     <div class="stat-choices">
-                        <button id="btn-stat-hp">Max HP +10%</button>
-                        <button id="btn-stat-atk">Attack Power +10%</button>
+                        <button id="btn-stat-hp">Max HP +10</button>
+                        <button id="btn-stat-atk">Attack Power +5</button>
                         <button id="btn-stat-def">Defense +1</button>
-                        <button id="btn-stat-spd">Move Speed +10%</button>
-                        <button id="btn-stat-aspd">Attack Speed +10%</button>
-                        <button id="btn-stat-zone-targeted">Zone: Targeted Field</button>
-                        <button id="btn-stat-zone-aura">Zone: Aura Shield</button>
+                        <button id="btn-stat-spd">Move Speed +15</button>
+                        <button id="btn-stat-aspd">Attack Speed +0.1x</button>
+                        <button id="btn-stat-zone-targeted">Zone: 수류탄 (Targeted)</button>
+                        <button id="btn-stat-zone-aura">Zone: 방사능 (Aura)</button>
+                        <button id="btn-stat-wpn-sniper">Weapon: 저격 (Sniper)</button>
+                        <button id="btn-stat-wpn-balance">Weapon: 샷건 (Shotgun)</button>
+                        <button id="btn-stat-wpn-bruiser">Weapon: 단검 (Dagger)</button>
                     </div>
                 </div>
 
@@ -74,24 +79,27 @@
         </div>
     </div>
 
-    <!-- Engine -->
+    <!-- 엔진 -->
+    <script src="src/engine/Config.js"></script>
     <script src="src/engine/Input.js"></script>
     <script src="src/engine/Pool.js"></script>
+    <script src="src/engine/Game.js"></script>
 
-    <!-- Systems -->
+    <!-- 시스템 -->
     <script src="src/systems/EffectPool.js"></script>
     <script src="src/systems/Collision.js"></script>
     <script src="src/systems/WaveManager.js"></script>
     <script src="src/systems/UpgradeSystem.js"></script>
 
-    <!-- Entities -->
+    <!-- 개체 -->
     <script src="src/entities/ZoneWeapon.js"></script>
     <script src="src/entities/Weapon.js"></script>
+    <script src="src/entities/Item.js"></script>
     <script src="src/entities/Player.js"></script>
     <script src="src/entities/Enemy.js"></script>
     <script src="src/entities/Gem.js"></script>
 
-    <!-- Main Loop -->
+    <!-- 메인 루프 -->
     <script src="src/main.js"></script>
 </body>
 </html>

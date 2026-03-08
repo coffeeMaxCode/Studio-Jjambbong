@@ -20,59 +20,68 @@ class ActiveZone {
 
 /**
  * ZoneWeapon - 장판 무기 시스템
- * type: 'targeted' (설치형) | 'aura' (오라형)
+ * type: 'Grenade' (설치형) | 'Radiation' (오라형)
  */
 class ZoneWeapon {
     constructor(type) {
         this.type = type;
         this.level = 1;
         this.activeZones = [];
+        this.speedMultiplier = 1.0;
 
-        if (type === 'targeted') {
+        if (type === 'Grenade') {
             this.deployTimer = 0;       // 0이면 즉시 첫 배치
             this.deployInterval = 3.0;  // 3초마다 새 장판 배치
             this.zoneRadius = 70;
             this.zoneDuration = 3.0;
             this.baseDamage = 15;
+            this.tickInterval = 0.5;
         } else {
-            // 오라형: 즉시 영구 장판 생성
+            // Radiation (오라형): 즉시 영구 장판 생성
             this.zoneRadius = 80;
             this.baseDamage = 8;
+            this.tickInterval = 0.5;
 
             const aura = new ActiveZone();
             aura.active = true;
             aura.radius = this.zoneRadius;
             aura.duration = -1;
-            aura.tickInterval = 0.5;
+            aura.tickInterval = this.tickInterval;
             aura.followPlayer = true;
             aura.color = 'rgba(138,43,226,0.25)';
             this.activeZones.push(aura);
         }
     }
 
-    /** 레벨업 시 스탯 강화 (반경은 기본 증가량의 2배 추가) */
+    /** 레벨업 시 스탯 강화 (반경, 속도, 공격력 증가) */
     upgrade() {
         this.level++;
-        if (this.type === 'targeted') {
+        this.speedMultiplier *= 1.1; // 공격속도 증가 (쿨타임 감소)
+        
+        if (this.type === 'Grenade') {
             this.baseDamage += 10;
-            this.zoneRadius += 20; // 기본 증가량 10의 2배
+            this.zoneRadius += 20; 
+            this.tickInterval *= 0.9;
         } else {
             this.baseDamage += 5;
-            this.zoneRadius += 30; // 기본 증가량 15의 2배
-            // 오라 반경 즉시 반영
+            this.zoneRadius += 30; 
+            this.tickInterval *= 0.9;
+            // 오라 반경 즉시 반영 및 틱 갱신
             if (this.activeZones[0]) {
                 this.activeZones[0].radius = this.zoneRadius;
+                this.activeZones[0].tickInterval = this.tickInterval;
             }
         }
     }
 
     update(dt, player, waveManager) {
         // 설치형: 쿨다운마다 새 장판 배치
-        if (this.type === 'targeted') {
+        if (this.type === 'Grenade') {
             this.deployTimer -= dt;
+            const effectiveCooldown = this.deployInterval / this.speedMultiplier;
             if (this.deployTimer <= 0) {
                 this._deployTargetedZone(player, waveManager);
-                this.deployTimer = this.deployInterval;
+                this.deployTimer = effectiveCooldown;
             }
         }
 
@@ -89,7 +98,7 @@ class ZoneWeapon {
                 zone.y = player.y;
             }
 
-            // Tick Damage: 0.5초마다 범위 내 모든 적에게 피해
+            // 틱 데미지: 0.5초마다 범위 내 모든 적에게 피해
             zone.tickTimer -= dt;
             if (zone.tickTimer <= 0) {
                 zone.tickTimer = zone.tickInterval;
@@ -131,7 +140,7 @@ class ZoneWeapon {
         zone.radius = this.zoneRadius;
         zone.duration = this.zoneDuration;
         zone.tickTimer = 0;             // 배치 즉시 첫 틱 발동
-        zone.tickInterval = 0.5;
+        zone.tickInterval = this.tickInterval;
         zone.damage = this.baseDamage + Math.floor(player.attackPower);
         zone.followPlayer = false;
         zone.color = 'rgba(255,100,0,0.35)';

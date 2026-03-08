@@ -1,5 +1,6 @@
 class WaveManager {
-    constructor(canvasWidth, canvasHeight) {
+    constructor(canvasWidth, canvasHeight, game) {
+        this.game = game;
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
 
@@ -10,13 +11,13 @@ class WaveManager {
         this.spawnInterval = 1.0; // 기본: 1초에 1마리
         this.timeElapsed = 0;
 
-        // Kill Tracking
+        // 다음 스폰까지 남은 킬 수 추적
         this.killsToNextSpawns = {
             Small: 0,
             Medium: 0
         };
 
-        // Total Kills
+        // 총 처치 수
         this.totalKills = {
             Small: 0,
             Medium: 0,
@@ -92,11 +93,14 @@ class WaveManager {
             }
         }
 
-        enemy.spawn(x, y, type);
+        enemy.spawn(x, y, type, this.game);
 
         // 시간에 따른 HP 스케일링
         enemy.maxHp += Math.floor(this.timeElapsed / 30) * 10;
         enemy.hp = enemy.maxHp;
+
+        // 시간에 따른 공격력 스케일링 (30초마다 공격력 1 증가)
+        enemy.damage += Math.floor(this.timeElapsed / 30);
 
         this.activeEnemies.push(enemy);
     }

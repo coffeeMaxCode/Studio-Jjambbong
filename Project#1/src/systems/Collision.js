@@ -4,7 +4,7 @@ class CollisionSystem {
     update(player, waveManager) {
         if (!player || player.isDead || !waveManager) return;
 
-        // Player vs Enemies
+        // 플레이어 대 적 충돌 검사
         for (const enemy of waveManager.activeEnemies) {
             if (!enemy.active) continue;
 

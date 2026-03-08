@@ -101,38 +101,32 @@ class Weapon {
         this.projectilePool = new Pool(() => new Projectile(), 50);
         this.activeProjectiles = [];
 
-        // 초기 공격 속도 2배 빠르게 (쿨다운 절반)
-        if (type === 'Sniper') {
-            this.cooldown = 0.5;      // 기존 1.0 → 0.5
-            this.projSpeed = 600;
-            this.projDuration = 3.0;
-            this.baseDamage = 20;
-            this.projRadius = 5;
-            this.color = '#f1c40f';
-            this.pierce = 3;
-        } else if (type === 'Balance') {
-            this.cooldown = 0.25;     // 기존 0.5 → 0.25
-            this.projSpeed = 400;
-            this.projDuration = 1.0;
-            this.baseDamage = 15;
-            this.projRadius = 8;
-            this.color = '#2ecc71';
-            this.pierce = 1;
-        } else if (type === 'Bruiser') {
-            this.cooldown = 0.4;      // 기존 0.8 → 0.4
-            this.projSpeed = 200;
-            this.projDuration = 0.3;
-            this.baseDamage = 50;
-            this.projRadius = 25;
-            this.color = '#e67e22';
-            this.pierce = 99;
+        this.level = 1;
+        this.bonusPower = 0;
+        this.speedMultiplier = 1.0;
+        this.bonusRadius = 0;
+        this.bonusBullets = 0; // For Shotgun (starts with +0, base is 2)
+
+        // Config에서 스탯 불러오기
+        const stats = Config.WEAPON_STATS[type];
+        if (stats) {
+            this.cooldown = stats.cooldown;
+            this.projSpeed = stats.projSpeed;
+            this.projDuration = stats.projDuration;
+            this.baseDamage = stats.baseDamage;
+            this.projRadius = stats.projRadius;
+            this.color = stats.color;
+            this.pierce = stats.pierce;
+            this.maxDistSq = stats.maxDistSq;
+        } else {
+            console.warn(`No stats found for weapon type: ${type}`);
         }
     }
 
     update(dt, player, waveManager) {
         this.cooldownTimer -= dt;
 
-        const effectiveCooldown = this.cooldown / player.attackSpeed;
+        const effectiveCooldown = (this.cooldown / this.speedMultiplier) / player.attackSpeed;
 
         if (this.cooldownTimer <= 0 && waveManager) {
             const target = this.findNearestEnemy(player, waveManager);
@@ -152,6 +146,22 @@ class Weapon {
         }
     }
 
+    upgrade() {
+        this.level++;
+        if (this.type === 'Dagger') {
+            this.bonusRadius += 10;
+            this.speedMultiplier *= 1.1;
+            this.bonusPower += 5;
+        } else if (this.type === 'Shotgun') {
+            this.bonusBullets += 1;
+            this.speedMultiplier *= 1.1;
+            this.bonusPower += 3;
+        } else if (this.type === 'Sniper') {
+            this.bonusPower += 10;
+            this.speedMultiplier *= 1.1;
+        }
+    }
+
     draw(ctx) {
         for (const p of this.activeProjectiles) {
             p.draw(ctx);
@@ -162,7 +172,8 @@ class Weapon {
         let nearest = null;
         let minDistSq = Infinity;
 
-        const maxDistSq = this.type === 'Balance' ? (600 * 600) : Infinity;
+        // 생성자에서 설정된 Config의 maxDistSq 사용
+        const currentMaxDistSq = this.maxDistSq || Infinity;
 
         for (const enemy of waveManager.activeEnemies) {
             if (!enemy.active) continue;
@@ -171,7 +182,7 @@ class Weapon {
             const dy = enemy.y - player.y;
             const distSq = dx*dx + dy*dy;
 
-            if (distSq < minDistSq && distSq <= maxDistSq) {
+            if (distSq < minDistSq && distSq <= currentMaxDistSq) {
                 minDistSq = distSq;
                 nearest = enemy;
             }
@@ -180,15 +191,44 @@ class Weapon {
     }
 
     fire(player, target) {
-        const p = this.projectilePool.get();
-        const actualDamage = this.baseDamage + player.attackPower;
+        const actualDamage = this.baseDamage + this.bonusPower + player.attackPower;
+        const actualRadius = this.projRadius + this.bonusRadius;
 
-        p.spawn(
-            player.x, player.y,
-            target.x, target.y,
-            this.projSpeed, this.projDuration, actualDamage,
-            this.projRadius, this.color, this.type, this.pierce
-        );
-        this.activeProjectiles.push(p);
+        if (this.type === 'Shotgun') {
+            // 산탄총 형태
+            const dx = target.x - player.x;
+            const dy = target.y - player.y;
+            const baseAngle = Math.atan2(dy, dx);
+            
+            const totalBullets = 2 + this.bonusBullets;
+            const spreadAngleDeg = 15;
+            const startAngleDeg = -spreadAngleDeg * (totalBullets - 1) / 2;
+
+            for (let i = 0; i < totalBullets; i++) {
+                const p = this.projectilePool.get();
+                const offsetDeg = startAngleDeg + i * spreadAngleDeg;
+                const rad = baseAngle + (offsetDeg * Math.PI / 180);
+                
+                const targetX = player.x + Math.cos(rad) * 100;
+                const targetY = player.y + Math.sin(rad) * 100;
+
+                p.spawn(
+                    player.x, player.y,
+                    targetX, targetY,
+                    this.projSpeed, this.projDuration, actualDamage,
+                    actualRadius, this.color, this.type, this.pierce
+                );
+                this.activeProjectiles.push(p);
+            }
+        } else {
+            const p = this.projectilePool.get();
+            p.spawn(
+                player.x, player.y,
+                target.x, target.y,
+                this.projSpeed, this.projDuration, actualDamage,
+                actualRadius, this.color, this.type, this.pierce
+            );
+            this.activeProjectiles.push(p);
+        }
     }
 }
