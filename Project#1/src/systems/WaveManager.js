@@ -2,21 +2,21 @@ class WaveManager {
     constructor(canvasWidth, canvasHeight) {
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
-        
-        this.enemyPool = new Pool(() => new Enemy(), 300); // Pool of 300 enemies
+
+        this.enemyPool = new Pool(() => new Enemy(), 300);
         this.activeEnemies = [];
 
         this.spawnTimer = 0;
-        this.spawnInterval = 2.0; // Strictly 2 seconds
+        this.spawnInterval = 1.0; // 기본: 1초에 1마리
         this.timeElapsed = 0;
-        
-        // Kill Tracking (Counts towards next spawn, then resets)
+
+        // Kill Tracking
         this.killsToNextSpawns = {
             Small: 0,
             Medium: 0
         };
-        
-        // Total Kills (for stats if needed)
+
+        // Total Kills
         this.totalKills = {
             Small: 0,
             Medium: 0,
@@ -28,22 +28,20 @@ class WaveManager {
         this.timeElapsed += dt;
         this.spawnTimer += dt;
 
-        // Strictly every 2.0 seconds
+        // 소형 스폰 주기 가속: 20초마다 0.1초 감소, 최소 0.1초 (약 3분에 최고 난이도)
+        const intervals20 = Math.floor(this.timeElapsed / 20);
+        this.spawnInterval = Math.max(0.1, 1.0 - intervals20 * 0.1);
+
         if (this.spawnTimer >= this.spawnInterval) {
             this.spawnTimer -= this.spawnInterval;
             this.spawnSpecificEnemy(player.x, player.y, 'Small');
-            
-            // As time goes on, maybe spawn more small ones simultaneously to keep pacing up
-            if (this.timeElapsed > 60) this.spawnSpecificEnemy(player.x, player.y, 'Small');
-            if (this.timeElapsed > 120) this.spawnSpecificEnemy(player.x, player.y, 'Small');
-            if (this.timeElapsed > 180) this.spawnSpecificEnemy(player.x, player.y, 'Small');
         }
 
-        // Update active enemies and remove dead ones
+        // 활성 적 업데이트 및 사망 처리
         for (let i = this.activeEnemies.length - 1; i >= 0; i--) {
             const enemy = this.activeEnemies[i];
             enemy.update(dt, player.x, player.y);
-            
+
             if (!enemy.active) {
                 this.recordKill(enemy.type, player.x, player.y);
                 this.enemyPool.release(enemy);
@@ -55,13 +53,15 @@ class WaveManager {
     recordKill(type, playerX, playerY) {
         if (!this.totalKills[type]) this.totalKills[type] = 0;
         this.totalKills[type]++;
-        
+
+        // 소형 10킬 → 중형 1마리 스폰
         if (type === 'Small') {
             this.killsToNextSpawns.Small++;
             if (this.killsToNextSpawns.Small >= 10) {
                 this.killsToNextSpawns.Small = 0;
                 this.spawnSpecificEnemy(playerX, playerY, 'Medium');
             }
+        // 중형 10킬 → 대형 1마리 스폰
         } else if (type === 'Medium') {
             this.killsToNextSpawns.Medium++;
             if (this.killsToNextSpawns.Medium >= 10) {
@@ -77,15 +77,12 @@ class WaveManager {
         }
     }
 
-    // spawnEnemy is deprecated, directly use spawnSpecificEnemy for rule-based spawning
-
     spawnSpecificEnemy(playerX, playerY, type, forceX = null, forceY = null) {
         const enemy = this.enemyPool.get();
         let x = forceX;
         let y = forceY;
-        
+
         if (x === null || y === null) {
-            // Spawn around edges if not forced
             if (Math.random() > 0.5) {
                 x = Math.random() * this.canvasWidth;
                 y = Math.random() > 0.5 ? -30 : this.canvasHeight + 30;
@@ -97,7 +94,7 @@ class WaveManager {
 
         enemy.spawn(x, y, type);
 
-        // Scale max HP based on time
+        // 시간에 따른 HP 스케일링
         enemy.maxHp += Math.floor(this.timeElapsed / 30) * 10;
         enemy.hp = enemy.maxHp;
 
@@ -109,5 +106,8 @@ class WaveManager {
         this.activeEnemies = [];
         this.timeElapsed = 0;
         this.spawnTimer = 0;
+        this.spawnInterval = 1.0;
+        this.killsToNextSpawns = { Small: 0, Medium: 0 };
+        this.totalKills = { Small: 0, Medium: 0, Large: 0 };
     }
 }

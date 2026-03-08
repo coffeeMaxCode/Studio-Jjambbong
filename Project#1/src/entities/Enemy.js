@@ -73,12 +73,17 @@ class Enemy {
 
     takeDamage(amount, knockbackDx, knockbackDy, forceSpeed = null) {
         if (!this.active) return;
-        
+
         this.hp -= amount;
-        
-        // Only flash if took real damage
+
+        // Only flash and show damage number if took real damage
         if (amount > 0) {
             this.flashTimer = 0.1; // 100ms flash
+            // 데미지 숫자 표시 (머리 위, sourceKey=this로 스태킹 식별)
+            if (window.effectPool) {
+                const headY = this.y - (this.imgSize ? this.imgSize / 2 : this.radius) - 5;
+                window.effectPool.spawnText(this.x, headY, Math.floor(amount).toString(), this);
+            }
         }
         
         // Apply knockback

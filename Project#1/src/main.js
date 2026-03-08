@@ -50,6 +50,7 @@ function initGame(weaponType) {
     if (!upgradeSystem) upgradeSystem = new UpgradeSystem();
     
     effectPool = new EffectPool();
+    window.effectPool = effectPool; // Enemy 등 전역 접근용
 
     gemPool = new Pool(() => new Gem(), 300);
     activeGems = [];

@@ -11,20 +11,17 @@ class CollisionSystem {
             const dx = player.x - enemy.x;
             const dy = player.y - enemy.y;
             const distSq = dx * dx + dy * dy;
-            
+
             const rSum = player.radius + enemy.radius;
             if (distSq < rSum * rSum) {
-                // Collision!
-                // Only take damage and apply knockback if player is not invincible
                 if (player.invincibleTimer <= 0) {
                     player.takeDamage(enemy.damage);
-                    // Knockback the enemy backwards (direction from player to enemy)
+                    // 넉백: 기존 300 * 2.5 = 750 (튕겨 나가는 거리 2.5배 증가)
                     const dist = Math.sqrt(distSq);
                     if (dist > 0) {
                         const nx = -dx / dist;
                         const ny = -dy / dist;
-                        // Apply strong knockback (simulate taking 0 damage but getting pushed)
-                        enemy.takeDamage(0, nx, ny, 300); // 300 is the new strong knockback speed
+                        enemy.takeDamage(0, nx, ny, 750);
                     }
                 }
             }

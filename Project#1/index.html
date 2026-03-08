@@ -8,10 +8,10 @@
 </head>
 <body>
     <div id="game-container">
-        <!-- TOP 80% -->
+        <!-- 플레이 영역: 1280x720 (기존 전체 화면 크기) -->
         <div id="canvas-area">
-            <canvas id="game-canvas" width="1280" height="576"></canvas>
-            <!-- UI Overlays for inside canvas only (Menus/Game Over) -->
+            <canvas id="game-canvas" width="1280" height="720"></canvas>
+            <!-- UI Overlays (Menus / Game Over) -->
             <div id="ui-layer">
                 <div id="main-menu" class="screen">
                     <h1>Survive the Night</h1>
@@ -28,9 +28,11 @@
                     <div class="stat-choices">
                         <button id="btn-stat-hp">Max HP +10%</button>
                         <button id="btn-stat-atk">Attack Power +10%</button>
-                        <button id="btn-stat-def">Defense +10%</button>
+                        <button id="btn-stat-def">Defense +1</button>
                         <button id="btn-stat-spd">Move Speed +10%</button>
                         <button id="btn-stat-aspd">Attack Speed +10%</button>
+                        <button id="btn-stat-zone-targeted">Zone: Targeted Field</button>
+                        <button id="btn-stat-zone-aura">Zone: Aura Shield</button>
                     </div>
                 </div>
 
@@ -46,8 +48,8 @@
                 </div>
             </div>
         </div>
-        
-        <!-- BOTTOM 20% HUD -->
+
+        <!-- 하단 UI 영역: 별도 추가 공간 (상태창) -->
         <div id="ui-area">
             <div id="hud">
                 <div class="hud-center-group">
@@ -72,35 +74,23 @@
         </div>
     </div>
 
-            <div id="gameover-screen" class="screen hidden">
-                <h2>Game Over</h2>
-                <p>You survived for <span id="final-time">00:00</span></p>
-                <div id="revive-prompt">
-                    <p>Revive once with 50% HP?</p>
-                    <button id="btn-revive">Revive</button>
-                </div>
-                <br>
-                <button id="btn-restart">Restart fully</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Engine -->
     <script src="src/engine/Input.js"></script>
     <script src="src/engine/Pool.js"></script>
-    
-    <!-- Systems (Stubs for now) -->
+
+    <!-- Systems -->
     <script src="src/systems/EffectPool.js"></script>
     <script src="src/systems/Collision.js"></script>
     <script src="src/systems/WaveManager.js"></script>
     <script src="src/systems/UpgradeSystem.js"></script>
-    
-    <!-- Entities (Stubs for now) -->
+
+    <!-- Entities -->
+    <script src="src/entities/ZoneWeapon.js"></script>
     <script src="src/entities/Weapon.js"></script>
     <script src="src/entities/Player.js"></script>
     <script src="src/entities/Enemy.js"></script>
     <script src="src/entities/Gem.js"></script>
-    
+
     <!-- Main Loop -->
     <script src="src/main.js"></script>
 </body>
