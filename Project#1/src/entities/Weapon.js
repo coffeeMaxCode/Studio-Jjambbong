@@ -94,17 +94,25 @@ class Projectile {
 
     draw(ctx) {
         if (!this.active) return;
-        ctx.beginPath();
         if (this.type === 'Dagger') {
             const angle = Math.atan2(this.vy, this.vx);
-            // 전방 180도 반원형 (부채꼴)
-            ctx.arc(this.x, this.y, this.radius, angle - Math.PI / 2, angle + Math.PI / 2);
-            ctx.lineTo(this.x, this.y);
+            // 전방 180도 반원형 (부채꼴) — X(reach)×2.0, Y(width)×0.7
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(angle);
+            ctx.scale(2.0, 0.7);
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, -Math.PI / 2, Math.PI / 2);
+            ctx.lineTo(0, 0);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.restore();
         } else {
+            ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
         }
-        ctx.fillStyle = this.color;
-        ctx.fill();
     }
 }
 

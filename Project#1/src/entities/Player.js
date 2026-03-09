@@ -3,7 +3,7 @@ class Player {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.radius = 56; // Doubled from 28
+        this.radius = 26; // Tight fit to visible character sprite (81x108px rendered)
 
         this.img = new Image();
         this.img.src = 'src/img/character001.png';
@@ -37,7 +37,7 @@ class Player {
         this.level = 1;
         this.exp = 0;
         this.expToNext = 10;
-        this.magnetRadius = 100;
+        this.magnetRadius = 200; // Doubled from 100
 
         // 무기 목록 (일반 투사체 무기 배열)
         this.weapons = [];
@@ -232,7 +232,7 @@ class Player {
         this.level = 1;
         this.exp = 0;
         this.expToNext = 10;
-        this.magnetRadius = 100;
+        this.magnetRadius = 200; // Doubled from 100
 
         // 무기 목록 (일반 투사체 무기 배열)
         this.weapons = [];
@@ -353,6 +353,15 @@ class Player {
         }
 
         ctx.globalAlpha = 1.0;
+
+        // DEBUG: Hitbox visualization — circle radius: 56px, diameter: 112px
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
 
         // 일반 무기 발사체
         for (const w of this.weapons) {
