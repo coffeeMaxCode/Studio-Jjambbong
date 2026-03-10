@@ -6,7 +6,7 @@ class Gem {
         this.expAmount = 1;
         this.radius = 4;
         this.isBeingMagnetized = false;
-        this.magnetSpeed = 400; // 플레이어에게 날아갈 때의 초당 픽셀 이동 속도
+        this.magnetSpeed = 500; // Reduced from 1500 (slower pull speed)
         this.color = '#3498db';
 
         if (!Gem.imgGem) {
@@ -55,9 +55,9 @@ class Gem {
 
             // 플레이어를 향해 날아감
             if (dist > 0) {
-                // 자석 효과 시 매우 빠르게 이동
-                this.x += (dx / dist) * 1500 * dt;
-                this.y += (dy / dist) * 1500 * dt;
+                // 자석 효과 시 이동 (pull speed reduced from 1500)
+                this.x += (dx / dist) * this.magnetSpeed * dt;
+                this.y += (dy / dist) * this.magnetSpeed * dt;
             }
 
             // 충돌 확인 (획득) - 충돌 판정 반경도 약간 넉넉하게

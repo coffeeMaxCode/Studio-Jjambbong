@@ -45,7 +45,7 @@ class Enemy {
             this.maxHp = 5;
             this.speed = 80;
             this.color = '#e74c3c';
-            this.radius = 16;
+            this.radius = 10; // Tight fit: slime body ~65% of 32px sprite → ~10px
             this.damage = 5;
             this.knockbackResistance = 0.2;
             this.img = Enemy.imgSmall;
@@ -55,7 +55,7 @@ class Enemy {
             this.maxHp = 25;
             this.speed = 60;
             this.color = '#8e44ad';
-            this.radius = 32;
+            this.radius = 25; // Tight fit: slime body ~78% of 64px sprite → ~25px
             this.damage = 15;
             this.knockbackResistance = 0.5;
             this.img = Enemy.imgMedium;
@@ -64,7 +64,7 @@ class Enemy {
         } else if (type === 'Large') { // 대형
             this.maxHp = 60;
             this.defense = 3;
-            this.radius = 64; // 128x128 크기에 정확히 일치하도록 반경 조정
+            this.radius = 52; // Tight fit: slime body ~82% of 128px sprite → ~52px
             this.speed = 25;
             this.damage = 5;
             this.color = '#ff4757';
@@ -193,6 +193,15 @@ class Enemy {
             ctx.fillStyle = (this.flashTimer > 0) ? '#fff' : this.color;
             ctx.fill();
         }
+
+        // DEBUG: Hitbox visualization
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
 
         // 체력바 렌더링
         const barWidth = this.imgSize * 0.8;

@@ -34,7 +34,7 @@ class ZoneWeapon {
             this.deployTimer = 0;       // 0이면 즉시 첫 배치
             this.deployInterval = 3.0;  // 3초마다 새 장판 배치
             this.zoneRadius = 70;
-            this.zoneDuration = 0.1;    // 0.1초 지속 (즉발 느낌)
+            this.zoneDuration = 0.2;    // 0.2초 지속 (doubled from 0.1)
             this.baseDamage = 50;       // 폭발형이므로 데미지 상향 조정
             this.tickInterval = 0.05;   // 매우 빠른 체크
         } else if (this.type === 'Radiation') {
@@ -179,6 +179,13 @@ class ZoneWeapon {
         zone.color = 'rgba(255,100,0,0.6)'; // 폭발이므로 좀 더 진하게
         zone.hitEnemies = [];
         this.activeZones.push(zone);
+
+        // 폭발 애니메이션 생성: 장판 반지름 × 2 크기로 스폰
+        // player.game이 존재할 때만 호출하여 방어적으로 처리
+        if (player.game) {
+            player.game.spawnExplosion(tx, ty, this.zoneRadius * 2);
+        }
+
         return true;
     }
 

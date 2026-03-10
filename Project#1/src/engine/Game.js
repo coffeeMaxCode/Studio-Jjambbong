@@ -19,6 +19,7 @@ class Game {
         this.player = null;
         this.activeGems = [];
         this.activeItems = [];
+        this.activeExplosions = []; // 재생 중인 폭발 애니메이션 목록
 
         this.itemSpawnTimer = 0;
 
@@ -88,6 +89,7 @@ class Game {
         this.itemPool.releaseAll();
         this.activeGems = [];
         this.activeItems = [];
+        this.activeExplosions = []; // 게임 재시작 시 이전 폭발 완전 초기화
         this.itemSpawnTimer = 0;
 
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2, this);
@@ -190,6 +192,16 @@ class Game {
         }
 
         if (this.effectPool) this.effectPool.update(dt);
+
+        // 폭발 애니메이션 업데이트 및 완료된 항목 제거 (메모리 누수 방지)
+        // 역순 순회: splice로 중간 항목을 제거해도 아직 처리 안 된 인덱스에 영향 없음
+        for (let i = this.activeExplosions.length - 1; i >= 0; i--) {
+            const exp = this.activeExplosions[i];
+            exp.update(dt);
+            if (exp.isFinished) {
+                this.activeExplosions.splice(i, 1); // 배열에서 제거 → GC가 수거
+            }
+        }
     }
 
     draw() {
@@ -210,6 +222,8 @@ class Game {
 
         if (this.waveManager) this.waveManager.draw(this.ctx);
         if (this.player) this.player.draw(this.ctx);
+        // 폭발 이펙트: 스프라이트/적 위, 데미지 텍스트 아래 레이어
+        for (const exp of this.activeExplosions) exp.draw(this.ctx);
         if (this.effectPool) this.effectPool.draw(this.ctx);
     }
 
@@ -218,6 +232,16 @@ class Game {
         const gem = this.gemPool.get();
         gem.spawn(x, y, amount);
         this.activeGems.push(gem);
+    }
+
+    /**
+     * 지정 위치에 1회성 폭발 애니메이션을 생성한다.
+     * @param {number} x    - 폭발 중심 X
+     * @param {number} y    - 폭발 중심 Y
+     * @param {number} size - 렌더링 크기(px). 수류탄 반지름 × 2 권장.
+     */
+    spawnExplosion(x, y, size = 160) {
+        this.activeExplosions.push(new Explosion(x, y, size));
     }
 
     spawnRandomItem() {
