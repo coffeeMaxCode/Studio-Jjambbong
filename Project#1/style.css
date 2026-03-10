@@ -298,3 +298,50 @@ button:hover {
     cursor: help;
     display: inline-block;
 }
+
+#dev-mode-toggle-container {
+    position: absolute;
+    left: 20px;
+    top: 10px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#dev-tools {
+    display: flex;
+    gap: 8px;
+}
+
+#btn-dev-mode, #btn-exp-boost, #btn-force-level-up {
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #34495e;
+    color: white;
+    border: 2px solid #7f8c8d;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    pointer-events: auto;
+    margin: 0;
+}
+
+#btn-exp-boost {
+    background-color: #2980b9;
+    min-width: 80px;
+}
+
+#btn-force-level-up {
+    background-color: #8e44ad;
+}
+
+#btn-dev-mode:hover, #btn-exp-boost:hover, #btn-force-level-up:hover {
+    filter: brightness(1.2);
+    transform: scale(1.05);
+}
+
+#btn-dev-mode.active {
+    background-color: #e74c3c;
+    border-color: #c0392b;
+}
