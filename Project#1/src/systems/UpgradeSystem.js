@@ -184,7 +184,7 @@ class UpgradeSystem {
                 break;
             case 'spd':
                 u.spd++;
-                this.playerRef.moveSpeed += this.playerRef.baseMoveSpeed + 25;
+                this.playerRef.moveSpeed += 25;
                 // magnetRadius 분리됨
                 break;
             case 'magnet':
