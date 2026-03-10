@@ -195,13 +195,15 @@ class Enemy {
         }
 
         // DEBUG: Hitbox visualization
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
+        if (this.game && this.game.isDevMode) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
 
         // 체력바 렌더링
         const barWidth = this.imgSize * 0.8;
