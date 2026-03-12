@@ -92,6 +92,7 @@ class UpgradeSystem {
 
             if (type === 'Grenade') { radius = 70; cooldown = 3.0; }
             if (type === 'Radiation') { radius = 150; cooldown = 1.0; }
+            if (type === 'Greatsword') { radius = base.attackRadius || 180; }
 
             if (w) {
                 dmg = w.baseDamage + (w.bonusPower || 0);
@@ -99,7 +100,8 @@ class UpgradeSystem {
                 else if (w.cooldown) cooldown = w.cooldown / w.speedMultiplier;
                 else if (w.deployInterval) cooldown = w.deployInterval / w.speedMultiplier;
 
-                if (w.projRadius) radius = w.projRadius + (w.bonusRadius || 0);
+                if (w.attackRadius) radius = w.attackRadius;
+                else if (w.projRadius) radius = w.projRadius + (w.bonusRadius || 0);
                 if (w.zoneRadius) radius = w.zoneRadius;
                 maxShots = w.maxShots || 0;
                 reloadTime = w.baseReloadTime || 0;
@@ -117,7 +119,11 @@ class UpgradeSystem {
             let reloadNext = '';
 
             if (w) {
-                if (type === 'Dagger') {
+                if (type === 'Greatsword') {
+                    dmgNext = ` <span style="color:#2ecc71">-> ${dmg + player.attackPower + 8}</span>`;
+                    radiusNext = ` <span style="color:#2ecc71">-> ${radius + 20}</span>`;
+                    cooldownNext = ` <span style="color:#2ecc71">-> ${((cooldown || 1.5) * 0.91).toFixed(2)}초</span>`;
+                } else if (type === 'Dagger') {
                     dmgNext = ` <span style="color:#2ecc71">-> ${dmg + player.attackPower + 1.5}</span>`;
                     radiusNext = ` <span style="color:#2ecc71">-> ${radius + 5}</span>`;
                     cooldownNext = ` <span style="color:#2ecc71">-> ${((cooldown || 0.4) * 0.945).toFixed(2)}초</span>`; // roughly 5.5% faster
@@ -152,7 +158,7 @@ class UpgradeSystem {
             return html;
         };
 
-        updateBtn('btn-stat-wpn-bruiser', `대검 (Greatsword)`, u.bruiser, getTooltip('Dagger'));
+        updateBtn('btn-stat-wpn-bruiser', `대검 (Greatsword)`, u.bruiser, getTooltip('Greatsword'));
         updateBtn('btn-stat-wpn-sniper', `저격 (Sniper)`, u.sniper, getTooltip('Sniper'));
         updateBtn('btn-stat-wpn-balance', `샷건 (Shotgun)`, u.balance, getTooltip('Shotgun'));
         updateBtn('btn-stat-zone-targeted', `수류탄 (Grenade)`, u.grenade, getTooltip('Grenade'));
@@ -184,7 +190,7 @@ class UpgradeSystem {
                 break;
             case 'spd':
                 u.spd++;
-                this.playerRef.moveSpeed += this.playerRef.baseMoveSpeed + 25;
+                this.playerRef.moveSpeed += 25;
                 // magnetRadius 분리됨
                 break;
             case 'magnet':
@@ -230,9 +236,9 @@ class UpgradeSystem {
             }
             case 'wpn-bruiser': {
                 u.bruiser++;
-                const existing = this.playerRef.weapons.find(w => w.type === 'Dagger');
+                const existing = this.playerRef.weapons.find(w => w.type === 'Greatsword');
                 if (existing) existing.upgrade();
-                else this.playerRef.weapons.push(new Weapon('Dagger'));
+                else this.playerRef.weapons.push(new GreatswordWeapon());
                 break;
             }
         }

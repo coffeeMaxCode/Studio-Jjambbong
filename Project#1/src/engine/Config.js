@@ -33,6 +33,12 @@ const Config = {
             color: '#e67e22',
             pierce: 99,
             maxDistSq: 200 * 200
+        },
+        Greatsword: {
+            cooldown: 2.5,          // 2.5초 쿨다운 (중검 무게감)
+            baseDamage: 25,         // 높은 단타 데미지
+            attackRadius: 360,      // 근거리 부채꼴 범위 (px)
+            maxDistSq: 600 * 600    // 발동 사거리
         }
     }
 };

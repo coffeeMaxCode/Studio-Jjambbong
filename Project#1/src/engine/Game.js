@@ -22,6 +22,7 @@ class Game {
         this.activeExplosions = []; // 재생 중인 폭발 애니메이션 목록
 
         this.itemSpawnTimer = 0;
+        this.stopwatchTimer = 0;
 
         // UI 요소 바인딩
         this.uiMainMenu = document.getElementById('main-menu');
@@ -37,7 +38,7 @@ class Game {
     bindEvents() {
         document.getElementById('btn-sniper').addEventListener('click', () => this.initGame('Sniper'));
         document.getElementById('btn-balance').addEventListener('click', () => this.initGame('Shotgun'));
-        document.getElementById('btn-bruiser').addEventListener('click', () => this.initGame('Dagger'));
+        document.getElementById('btn-bruiser').addEventListener('click', () => this.initGame('Greatsword'));
         document.getElementById('btn-start-aura').addEventListener('click', () => this.initGame('Radiation'));
         document.getElementById('btn-start-targeted').addEventListener('click', () => this.initGame('Grenade'));
 
@@ -99,11 +100,13 @@ class Game {
         } else if (weaponType === 'Grenade') {
             this.player.zoneWeapons.push(new ZoneWeapon(weaponType));
             this.player.upgradeLevels.grenade = 1;
+        } else if (weaponType === 'Greatsword') {
+            this.player.weapons.push(new GreatswordWeapon());
+            this.player.upgradeLevels.bruiser = 1;
         } else {
             this.player.weapons.push(new Weapon(weaponType));
             if (weaponType === 'Sniper') this.player.upgradeLevels.sniper = 1;
             else if (weaponType === 'Shotgun') this.player.upgradeLevels.balance = 1;
-            else if (weaponType === 'Dagger') this.player.upgradeLevels.bruiser = 1;
         }
 
         this.player.updateHpUI();
@@ -405,7 +408,7 @@ class Game {
         const weaponsContainer = document.getElementById('pause-weapons-list');
         weaponsContainer.innerHTML = ''; // Clear existing content
 
-        addWpn('대검 (Greatsword)', u.bruiser, 'Dagger');
+        addWpn('대검 (Greatsword)', u.bruiser, 'Greatsword');
         addWpn('저격 (Sniper)', u.sniper, 'Sniper');
         addWpn('샷건 (Shotgun)', u.balance, 'Shotgun');
         addWpn('수류탄 (Grenade)', u.grenade, 'Grenade');

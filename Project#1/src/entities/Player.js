@@ -329,32 +329,34 @@ class Player {
             zw.draw(ctx);
         }
 
-        // 무적 시 깜빡임
-        if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer * 10) % 2 === 0) {
-            ctx.globalAlpha = 0.5;
-        }
+        // handlesSprite=true인 무기(GreatswordWeapon)가 있으면
+        // 해당 무기의 draw()에서 캐릭터 스프라이트를 직접 렌더링하므로 여기서는 건너뜀
+        const spriteHandled = this.weapons.some(w => w.handlesSprite);
 
-        // 플레이어 스프라이트
-        if (this.img.complete && this.img.naturalWidth > 0) {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            // 방향에 따라 이미지 반전 (기본 오른쪽 시선)
-            if (this.facingX < 0) {
-                ctx.scale(-1, 1);
+        if (!spriteHandled) {
+            // 무적 시 깜빡임
+            if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer * 10) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
             }
-            // 기준점이 이동했으므로 x, y를 0 주변 오프셋으로 수정
-            ctx.drawImage(this.img, -40.5, -54, 81, 108); // 162x216의 절반 크기
-            ctx.restore();
-        } else {
-            ctx.fillStyle = '#3498db';
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fill();
+
+            // 기본 캐릭터 스프라이트 (character001.png)
+            if (this.img.complete && this.img.naturalWidth > 0) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                if (this.facingX < 0) ctx.scale(-1, 1);
+                ctx.drawImage(this.img, -40.5, -54, 81, 108);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.globalAlpha = 1.0;
         }
 
-        ctx.globalAlpha = 1.0;
-
-        // DEBUG: Hitbox visualization — circle radius: 56px, diameter: 112px
+        // DEBUG: Hitbox visualization
         ctx.save();
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -363,7 +365,7 @@ class Player {
         ctx.stroke();
         ctx.restore();
 
-        // 일반 무기 발사체
+        // 무기 렌더링 (GreatswordWeapon은 여기서 캐릭터 스프라이트도 함께 그림)
         for (const w of this.weapons) {
             w.draw(ctx);
         }

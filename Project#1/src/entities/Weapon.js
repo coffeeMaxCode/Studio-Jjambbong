@@ -230,9 +230,7 @@ class Weapon {
 
     findNearestEnemy(player, waveManager) {
         let nearest = null;
-        let minDistSq = Infinity;
-
-        const currentMaxDistSq = this.maxDistSq || Infinity;
+        let minDistSq = this.maxDistSq;
 
         // 플레이어가 바라보는 방향의 각도
         const playerAngle = Math.atan2(player.facingY, player.facingX);
