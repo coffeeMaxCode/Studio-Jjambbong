@@ -14,13 +14,15 @@
 
 class GreatswordAttack {
     constructor() {
-        this.x          = 0;
-        this.y          = 0;
-        this.baseAngle  = 0;   // 공격 기준 방향 (공격 시작 시 고정)
-        this.frameIndex = 0;
-        this.frameTimer = 0;
-        this.hitEnemies = [];
-        this.damage     = 0;
+        this.x           = 0;
+        this.y           = 0;
+        this.baseAngle   = 0;   // 공격 기준 방향 (공격 시작 시 고정)
+        this.frameIndex  = 0;
+        this.frameTimer  = 0;
+        this.hitEnemies  = [];
+        this.damage      = 0;
+        // 검기(SwordAura) 스폰 여부 — 1회만 발사되도록 제어
+        this.auraSpawned = false;
     }
 }
 
@@ -82,6 +84,15 @@ class GreatswordWeapon {
         this.activeAttacks   = [];
         this.playerRef       = null;
 
+        // ── 검기(SwordAura) 강화 상태 ────────────────────────────────
+        // auraLevel: 0=미해금, 1=lv5 해금, 2=lv10, 3=lv15, 4=lv20+
+        this.auraLevel         = 0;
+        // 검기 전용 쿨타임 (대검 스윙 쿨타임과 독립)
+        this.auraCooldown      = 2.0;  // lv1~3: 2.0초, lv4+: 0.5초
+        this.auraCooldownTimer = 0;    // 0 이하면 발사 가능
+        // 크리티컬 확률 (0.0~1.0) lv4에서 0.10, lv21+부터 2%씩 증가
+        this.auraCritChance    = 0;
+
         const stats        = Config.WEAPON_STATS['Greatsword'];
         this.cooldown      = stats.cooldown;
         this.baseDamage    = stats.baseDamage;
@@ -111,13 +122,34 @@ class GreatswordWeapon {
         this.bonusPower      += 8;
         this.speedMultiplier *= 1.1;
         this.attackRadius    += 20;
+
+        // ── 검기 단계 갱신 (5레벨마다 +1) ────────────────────────────
+        //   lv 5  → auraLevel 1 : 검기 해금, 쿨타임 2초
+        //   lv 10 → auraLevel 2 : 반대 방향 추가 검기
+        //   lv 15 → auraLevel 3 : 거리 비례 크기 성장
+        //   lv 20 → auraLevel 4 : 쿨타임 0.5초, 크리티컬 10%
+        this.auraLevel = this.level >= 5
+            ? Math.floor((this.level - 5) / 5) + 1
+            : 0;
+
+        // ── 쿨타임 갱신 ──────────────────────────────────────────────
+        this.auraCooldown = this.level >= 20 ? 1.0 : 2.0;
+
+        // ── 크리티컬 확률 갱신 ───────────────────────────────────────
+        //   lv20: 10%, lv21: 12%, lv22: 14% … (+2% per level above 20)
+        if (this.level >= 20) {
+            this.auraCritChance = 0.10 + (this.level - 20) * 0.02;
+        } else {
+            this.auraCritChance = 0;
+        }
     }
 
     // ── 매 프레임 업데이트 ────────────────────────────────────────────
     update(dt, player, waveManager) {
         this.playerRef = player;
 
-        if (this.cooldownTimer > 0) this.cooldownTimer -= dt;
+        if (this.cooldownTimer > 0)      this.cooldownTimer      -= dt;
+        if (this.auraCooldownTimer > 0)  this.auraCooldownTimer  -= dt;
 
         // 이전 공격이 완전히 끝난 뒤에만 새 공격
         if (this.cooldownTimer <= 0 && this.activeAttacks.length === 0) {
@@ -150,6 +182,13 @@ class GreatswordWeapon {
                 this._setShake(false);
                 this.activeAttacks.splice(i, 1);
                 continue;
+            }
+
+            // ── 프레임 4 진입 시 검기(SwordAura) 1회 스폰 ──────────
+            // Frame 4 = 충격 플래시 구간 — 애니메이션 약 52% 시점
+            if (atk.frameIndex === 4 && !atk.auraSpawned) {
+                atk.auraSpawned = true;
+                this._spawnSwordAura(player, atk);
             }
 
             // ── 궤적 기반 프레임별 히트 판정 ────────────────────────
@@ -235,6 +274,53 @@ class GreatswordWeapon {
                 enemy.takeDamage(atk.damage, dx, dy, 350);
                 atk.hitEnemies.push(enemy);
             }
+        }
+    }
+
+    // ── 검기 스폰 ────────────────────────────────────────────────────
+    /**
+     * 충격 프레임 진입 시 SwordAura 를 발사한다.
+     *
+     * 스폰 위치:
+     *   player 중심 + (공격 방향 벡터 × WEAPON_TIP_OFFSET)
+     *   — 검끝 근처에서 에너지가 날아가는 것처럼 보이게 한다.
+     *
+     * @param {Player}          player
+     * @param {GreatswordAttack} atk
+     */
+    _spawnSwordAura(player, atk) {
+        if (!player.game)          return;
+        if (this.auraLevel <= 0)   return; // lv5 미만: 검기 미해금
+        if (this.auraCooldownTimer > 0) return; // 쿨타임 중
+
+        // 쿨타임 리셋
+        this.auraCooldownTimer = this.auraCooldown;
+
+        const OFFSET = 80; // 검끝까지 오프셋 (px)
+        const cos    = Math.cos(atk.baseAngle);
+        const sin    = Math.sin(atk.baseAngle);
+        const spawnX = player.x + cos * OFFSET;
+        const spawnY = player.y + sin * OFFSET;
+
+        // 대검 데미지 × 2
+        const auraDamage = atk.damage * 2;
+
+        // 모든 레벨 공통 설정
+        const cfg = {
+            originX:          player.x,
+            originY:          player.y,
+            growWithDistance: this.auraLevel >= 3,
+            critChance:       this.auraCritChance,
+        };
+
+        // 전방 검기
+        player.game.spawnSwordAura(spawnX, spawnY, cos, sin, auraDamage, cfg);
+
+        // lv2+: 반대 방향 추가 검기
+        if (this.auraLevel >= 2) {
+            const bx = player.x - cos * OFFSET;
+            const by = player.y - sin * OFFSET;
+            player.game.spawnSwordAura(bx, by, -cos, -sin, auraDamage, cfg);
         }
     }
 

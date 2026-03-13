@@ -19,7 +19,8 @@ class Game {
         this.player = null;
         this.activeGems = [];
         this.activeItems = [];
-        this.activeExplosions = []; // 재생 중인 폭발 애니메이션 목록
+        this.activeExplosions  = []; // 재생 중인 폭발 애니메이션 목록
+        this.activeSwordAuras  = []; // 활성 검기(SwordAura) 투사체 목록
 
         this.itemSpawnTimer = 0;
         this.stopwatchTimer = 0;
@@ -91,6 +92,7 @@ class Game {
         this.activeGems = [];
         this.activeItems = [];
         this.activeExplosions = []; // 게임 재시작 시 이전 폭발 완전 초기화
+        this.activeSwordAuras = [];
         this.itemSpawnTimer = 0;
 
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2, this);
@@ -196,6 +198,15 @@ class Game {
 
         if (this.effectPool) this.effectPool.update(dt);
 
+        // 검기 투사체 업데이트 및 소멸 제거
+        for (let i = this.activeSwordAuras.length - 1; i >= 0; i--) {
+            const aura = this.activeSwordAuras[i];
+            aura.update(dt, this.waveManager);
+            if (!aura.active) {
+                this.activeSwordAuras.splice(i, 1);
+            }
+        }
+
         // 폭발 애니메이션 업데이트 및 완료된 항목 제거 (메모리 누수 방지)
         // 역순 순회: splice로 중간 항목을 제거해도 아직 처리 안 된 인덱스에 영향 없음
         for (let i = this.activeExplosions.length - 1; i >= 0; i--) {
@@ -225,9 +236,31 @@ class Game {
 
         if (this.waveManager) this.waveManager.draw(this.ctx);
         if (this.player) this.player.draw(this.ctx);
+        // 검기: 플레이어 위, 폭발/데미지텍스트 아래 레이어
+        for (const aura of this.activeSwordAuras) aura.draw(this.ctx);
         // 폭발 이펙트: 스프라이트/적 위, 데미지 텍스트 아래 레이어
         for (const exp of this.activeExplosions) exp.draw(this.ctx);
         if (this.effectPool) this.effectPool.draw(this.ctx);
+    }
+
+    /**
+     * 검기(SwordAura) 투사체를 스폰한다.
+     * GreatswordWeapon._spawnSwordAura() 에서 호출된다.
+     *
+     * @param {number} x       - 스폰 X
+     * @param {number} y       - 스폰 Y
+     * @param {number} dirX    - 방향 X
+     * @param {number} dirY    - 방향 Y
+     * @param {number} damage  - 데미지 (대검 × 3 적용 후 전달됨)
+     * @param {Object} cfg     - SwordAura.spawn cfg 그대로 전달
+     */
+    spawnSwordAura(x, y, dirX, dirY, damage, cfg = {}) {
+        const aura = new SwordAura();
+        aura.canvasWidth  = this.canvas.width;
+        aura.canvasHeight = this.canvas.height;
+        // speed 560 px/s, ttl 0.55초 → 최대 도달 거리 ~308px
+        aura.spawn(x, y, dirX, dirY, 560, 0.55, damage, cfg);
+        this.activeSwordAuras.push(aura);
     }
 
     spawnGem(x, y, amount = 1) {

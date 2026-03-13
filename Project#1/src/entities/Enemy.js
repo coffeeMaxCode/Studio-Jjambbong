@@ -79,7 +79,7 @@ class Enemy {
         this.facingX = 1; // 1 = right, -1 = left
     }
 
-    takeDamage(amount, knockbackDx, knockbackDy, forceSpeed = null) {
+    takeDamage(amount, knockbackDx, knockbackDy, forceSpeed = null, isCrit = false) {
         if (!this.active) return;
 
         // 방어력 차감 (최소 1 데미지 보장)
@@ -89,10 +89,9 @@ class Enemy {
         // 실제 데미지를 입었을 때만 깜빡이고 데미지 숫자 표시
         if (finalDamage > 0) {
             this.flashTimer = 0.1; // 100ms 깜빡임
-            // 데미지 숫자 표시 (머리 위, sourceKey=this로 스태킹 식별)
             if (this.game && this.game.effectPool) {
                 const headY = this.y - (this.imgSize ? this.imgSize / 2 : this.radius) - 5;
-                this.game.effectPool.spawnText(this.x, headY, Math.floor(finalDamage).toString(), this);
+                this.game.effectPool.spawnText(this.x, headY, Math.floor(finalDamage).toString(), this, isCrit);
             }
         }
 
