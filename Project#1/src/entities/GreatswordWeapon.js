@@ -326,6 +326,14 @@ class GreatswordWeapon {
 
     // ── 최근접 적 탐색 ────────────────────────────────────────────────
     _findNearestEnemy(player, waveManager) {
+        // auto-aim OFF: 플레이어 facing 방향의 가상 타겟
+        if (player.game && !player.game.autoAimEnabled) {
+            return {
+                x: player.x + player.facingX * 200,
+                y: player.y + player.facingY * 200,
+                active: true
+            };
+        }
         let nearest   = null;
         let minDistSq = this.maxDistSq;
         for (const enemy of waveManager.activeEnemies) {

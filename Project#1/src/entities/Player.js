@@ -53,7 +53,8 @@ class Player {
         this.upgradeLevels = {
             hp: 0, atk: 0, def: 0, spd: 0, aspd: 0,
             magnet: 0, hpregen: 0,
-            bruiser: 0, sniper: 0, balance: 0, grenade: 0, radiation: 0
+            bruiser: 0, sniper: 0, balance: 0, grenade: 0, radiation: 0,
+            energybolt: 0, fireball: 0
         };
 
         this.hpRegen = 0;
@@ -62,6 +63,11 @@ class Player {
         // 버프 시스템
         this.buffMultipliers = { aspd: 1.0, mspd: 1.0 };
         this.buffTimers = { aspd: 0, mspd: 0 };
+
+        // 마법사 스프라이트 (Mage 클래스 전용)
+        this.wizardImg = new Image();
+        this.wizardImg.src = 'src/img/wizard_motion.png';
+        this.charFrame = 0; // 무기가 매 프레임 업데이트
     }
 
     applyTempBuff(type, duration, value) {
@@ -248,7 +254,8 @@ class Player {
         this.upgradeLevels = {
             hp: 0, atk: 0, def: 0, spd: 0, aspd: 0,
             magnet: 0, hpregen: 0,
-            bruiser: 0, sniper: 0, balance: 0, grenade: 0, radiation: 0
+            bruiser: 0, sniper: 0, balance: 0, grenade: 0, radiation: 0,
+            energybolt: 0, fireball: 0
         };
 
         this.hpRegen = 0;
@@ -257,6 +264,11 @@ class Player {
         // 버프 시스템
         this.buffMultipliers = { aspd: 1.0, mspd: 1.0 };
         this.buffTimers = { aspd: 0, mspd: 0 };
+
+        // 마법사 스프라이트 (Mage 클래스 전용)
+        this.wizardImg = new Image();
+        this.wizardImg.src = 'src/img/wizard_motion.png';
+        this.charFrame = 0; // 무기가 매 프레임 업데이트
     }
 
     applyTempBuff(type, duration, value) {
@@ -332,8 +344,16 @@ class Player {
         // handlesSprite=true인 무기(GreatswordWeapon)가 있으면
         // 해당 무기의 draw()에서 캐릭터 스프라이트를 직접 렌더링하므로 여기서는 건너뜀
         const spriteHandled = this.weapons.some(w => w.handlesSprite);
+        const isMage = this.game && this.game.selectedClass === 'Mage';
 
-        if (!spriteHandled) {
+        if (isMage) {
+            // 마법사 스프라이트 (wizard_motion.png 2×4 스프라이트시트)
+            if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer * 10) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+            this._drawWizardSprite(ctx);
+            ctx.globalAlpha = 1.0;
+        } else if (!spriteHandled) {
             // 무적 시 깜빡임
             if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer * 10) % 2 === 0) {
                 ctx.globalAlpha = 0.5;
@@ -452,5 +472,36 @@ class Player {
         const pct = Math.min(100, (this.exp / this.expToNext) * 100);
         document.getElementById('exp-bar-fill').style.width = `${pct}%`;
         document.getElementById('exp-text').innerText = `${Math.floor(this.exp)} / ${this.expToNext}`;
+    }
+
+    // ── 마법사 스프라이트 렌더링 ─────────────────────────────────────
+    // wizard_motion.png: 4열 × 2행 = 8프레임
+    // frame layout: [0][1][2][3] / [4][5][6][7]
+    _drawWizardSprite(ctx) {
+        if (!this.wizardImg.complete || this.wizardImg.naturalWidth === 0) {
+            // 이미지 로드 전 폴백
+            ctx.fillStyle = '#9b59b6';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            return;
+        }
+        const cols = 4, rows = 2;
+        const fw = this.wizardImg.naturalWidth / cols;
+        const fh = this.wizardImg.naturalHeight / rows;
+        const frame = Math.max(0, Math.min(7, Math.floor(this.charFrame || 0)));
+        const col = frame % cols;
+        const row = Math.floor(frame / cols);
+        // 렌더 크기: character001 대비 1.5배
+        const drawW = 120, drawH = 150;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        if (this.facingX < 0) ctx.scale(-1, 1);
+        ctx.drawImage(
+            this.wizardImg,
+            col * fw, row * fh, fw, fh,
+            -drawW / 2, -drawH / 2, drawW, drawH
+        );
+        ctx.restore();
     }
 }
