@@ -345,7 +345,6 @@ class Player {
         const spriteHandled = this.weapons.some(w => w.handlesSprite);
         const isMage = this.game && this.game.selectedClass === 'Mage';
 
-<<<<<<< HEAD
         if (isMage) {
             // 마법사 스프라이트 (wizard_motion.png 2×4 스프라이트시트)
             if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer * 10) % 2 === 0) {
@@ -376,34 +375,7 @@ class Player {
             ctx.globalAlpha = 1.0;
         }
 
-        // DEBUG: Hitbox visualization
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-=======
-        // 플레이어 스프라이트
-        if (this.img.complete && this.img.naturalWidth > 0) {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            if (this.facingX < 0) {
-                ctx.scale(-1, 1);
-            }
-            ctx.drawImage(this.img, -40.5, -54, 81, 108);
-            ctx.restore();
-        } else {
-            ctx.fillStyle = '#3498db';
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.globalAlpha = 1.0;
-
-        // DEBUG: Hitbox visualization
+        // DEBUG: Hitbox visualization (Dev Mode에서만 표시)
         if (this.game && this.game.isDevMode) {
             ctx.save();
             ctx.beginPath();
@@ -413,7 +385,6 @@ class Player {
             ctx.stroke();
             ctx.restore();
         }
->>>>>>> 93194716593d07c4ab973b3138bcf7fbae4e3aa9
 
         // 무기 렌더링 (GreatswordWeapon은 여기서 캐릭터 스프라이트도 함께 그림)
         for (const w of this.weapons) {
