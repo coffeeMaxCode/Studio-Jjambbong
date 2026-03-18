@@ -5,7 +5,11 @@ class Game {
         this.lastTime = 0;
         this.gameState = 'MENU';
         this.currentWeaponType = null;
+        this.selectedClass = null;
         this.gameTime = 0;
+        this.autoAimEnabled = true;
+        this.mouseX = 640;
+        this.mouseY = 360;
 
         // 핵심 엔진 시스템
         this.input = new InputManager();
@@ -19,9 +23,11 @@ class Game {
         this.player = null;
         this.activeGems = [];
         this.activeItems = [];
-        this.activeExplosions = []; // 재생 중인 폭발 애니메이션 목록
+        this.activeExplosions = [];
+        this.activeSwordAuras = [];
 
         this.itemSpawnTimer = 0;
+        this.stopwatchTimer = 0;
         this.isDevMode = false; // 개발자 모드 상태
         this.expMultiplier = 1; // 경험치 배율 (기본 x1)
 
@@ -33,15 +39,37 @@ class Game {
         this.uiGameOver = document.getElementById('gameover-screen');
         this.timeDisplay = document.getElementById('time-display');
 
+        this._buildClassButtons();
         this.bindEvents();
     }
 
+    // ── 직업 선택 버튼을 Config.CLASSES에서 동적 생성 ──────────────────
+    _buildClassButtons() {
+        const container = document.getElementById('class-choices-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        for (const [classKey, classDef] of Object.entries(Config.CLASSES)) {
+            const btn = document.createElement('button');
+            btn.className = 'class-btn';
+            btn.style.borderColor = classDef.color;
+            btn.innerHTML = `${classDef.label}<span class="class-btn-desc">${classDef.description}</span>`;
+            btn.addEventListener('click', () => this.selectClass(classKey));
+            container.appendChild(btn);
+        }
+    }
+
     bindEvents() {
-        document.getElementById('btn-sniper').addEventListener('click', () => this.initGame('Sniper'));
-        document.getElementById('btn-balance').addEventListener('click', () => this.initGame('Shotgun'));
-        document.getElementById('btn-bruiser').addEventListener('click', () => this.initGame('Dagger'));
-        document.getElementById('btn-start-aura').addEventListener('click', () => this.initGame('Radiation'));
-        document.getElementById('btn-start-targeted').addEventListener('click', () => this.initGame('Grenade'));
+        document.getElementById('btn-back-to-class').addEventListener('click', () => this.showClassSelect());
+
+        // 마우스 위치 추적 (마법사 빔 방향 제어)
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            this.mouseX = (e.clientX - rect.left) * scaleX;
+            this.mouseY = (e.clientY - rect.top) * scaleY;
+        });
 
         document.getElementById('btn-pause-resume').addEventListener('click', () => this.togglePause());
         document.getElementById('btn-pause-restart').addEventListener('click', () => this.returnToMenu());
@@ -61,6 +89,10 @@ class Game {
             }
         });
 
+        // auto-aim 인디케이터 클릭으로 토글
+        document.getElementById('autoaim-indicator').addEventListener('click', () => {
+            if (this.gameState === 'PLAYING') this.toggleAutoAim();
+        });
         const btnDevMode = document.getElementById('btn-dev-mode');
         const devTools = document.getElementById('dev-tools');
         const btnExpBoost = document.getElementById('btn-exp-boost');
@@ -71,7 +103,7 @@ class Game {
                 this.isDevMode = !this.isDevMode;
                 window.isDevMode = this.isDevMode;
                 btnDevMode.innerText = `Dev Mode: ${this.isDevMode ? 'ON' : 'OFF'}`;
-                
+
                 if (this.isDevMode) {
                     btnDevMode.classList.add('active');
                     devTools.classList.remove('hidden');
@@ -106,13 +138,69 @@ class Game {
             if (e.code === 'Escape') {
                 this.togglePause();
             }
+            // Q 키: auto-aim 토글 (인게임 중에만)
+            if (e.code === 'KeyQ' && this.gameState === 'PLAYING') {
+                this.toggleAutoAim();
+            }
         });
     }
 
+    // ── 직업 선택 (1단계) ───────────────────────────────────────────────
+    selectClass(classKey) {
+        const classDef = Config.CLASSES[classKey];
+        if (!classDef) return;
+        this.selectedClass = classKey;
+
+        // 단일 무기면 바로 게임 시작
+        if (classDef.startWeapon) {
+            this.initGame(classDef.startWeapon);
+            return;
+        }
+
+        // 무기 선택 단계로 이동
+        const title = document.getElementById('weapon-select-title');
+        title.textContent = `${classDef.label} — 무기를 선택하세요`;
+        title.style.color = classDef.color;
+
+        const container = document.getElementById('weapon-choices-dynamic');
+        container.innerHTML = '';
+        for (const wpnKey of classDef.availableWeapons) {
+            const meta = Config.WEAPON_META[wpnKey];
+            const btn = document.createElement('button');
+            btn.textContent = meta ? meta.label : wpnKey;
+            btn.style.borderColor = classDef.color;
+            btn.addEventListener('click', () => this.initGame(wpnKey));
+            container.appendChild(btn);
+        }
+
+        document.getElementById('class-select-step').classList.add('hidden');
+        document.getElementById('weapon-select-step').classList.remove('hidden');
+    }
+
+    showClassSelect() {
+        document.getElementById('class-select-step').classList.remove('hidden');
+        document.getElementById('weapon-select-step').classList.add('hidden');
+    }
+
+    // ── Auto-aim 토글 ────────────────────────────────────────────────────
+    toggleAutoAim() {
+        this.autoAimEnabled = !this.autoAimEnabled;
+        this._updateAutoAimUI();
+    }
+
+    _updateAutoAimUI() {
+        const statusEl = document.getElementById('autoaim-status');
+        if (!statusEl) return;
+        statusEl.textContent = this.autoAimEnabled ? 'ON' : 'OFF';
+        statusEl.className = this.autoAimEnabled ? 'on' : 'off';
+    }
+
+    // ── 게임 초기화 ──────────────────────────────────────────────────────
     initGame(weaponType) {
         this.currentWeaponType = weaponType;
         this.gameState = 'PLAYING';
         this.gameTime = 0;
+        this.autoAimEnabled = true;
 
         // UI 화면 전환
         this.uiMainMenu.classList.add('hidden');
@@ -120,11 +208,16 @@ class Game {
         this.uiLevelUp.classList.add('hidden');
         document.getElementById('pause-screen').classList.add('hidden');
 
-        // 20% 공간의 하단 UI 패널 표시
+        // auto-aim 인디케이터 표시
+        const aaIndicator = document.getElementById('autoaim-indicator');
+        aaIndicator.classList.remove('hidden');
+        this._updateAutoAimUI();
+
+        // 하단 UI 패널 표시
         this.uiArea.style.display = 'block';
         this.uiHud.classList.remove('hidden');
 
-        // 시스템 초기화 및 재설정
+        // 시스템 초기화
         this.waveManager = new WaveManager(this.canvas.width, this.canvas.height, this);
         this.upgradeSystem = new UpgradeSystem(this);
         this.effectPool = new EffectPool();
@@ -132,21 +225,33 @@ class Game {
         this.itemPool.releaseAll();
         this.activeGems = [];
         this.activeItems = [];
-        this.activeExplosions = []; // 게임 재시작 시 이전 폭발 완전 초기화
+        this.activeExplosions = [];
+        this.activeSwordAuras = [];
         this.itemSpawnTimer = 0;
 
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2, this);
+
+        // 무기 초기화 (기존 + 신규 마법사 무기)
         if (weaponType === 'Radiation') {
             this.player.zoneWeapons.push(new ZoneWeapon(weaponType));
             this.player.upgradeLevels.radiation = 1;
         } else if (weaponType === 'Grenade') {
             this.player.zoneWeapons.push(new ZoneWeapon(weaponType));
             this.player.upgradeLevels.grenade = 1;
+        } else if (weaponType === 'Greatsword') {
+            this.player.weapons.push(new GreatswordWeapon());
+            this.player.upgradeLevels.bruiser = 1;
+        } else if (weaponType === 'EnergyBolt') {
+            this.player.weapons.push(new EnergyBoltWeapon());
+            this.player.upgradeLevels.energybolt = 1;
+        } else if (weaponType === 'Fireball') {
+            this.player.weapons.push(new FireballWeapon());
+            this.player.upgradeLevels.fireball = 1;
         } else {
+            // Sniper, Shotgun, Dagger 등 기본 투사체 무기
             this.player.weapons.push(new Weapon(weaponType));
             if (weaponType === 'Sniper') this.player.upgradeLevels.sniper = 1;
             else if (weaponType === 'Shotgun') this.player.upgradeLevels.balance = 1;
-            else if (weaponType === 'Dagger') this.player.upgradeLevels.bruiser = 1;
         }
 
         this.player.updateHpUI();
@@ -158,21 +263,15 @@ class Game {
     }
 
     gameLoop(timestamp) {
-        // 게임 루프가 계속 돌게 하되, PLAYING 상태일 때만 업데이트 수행
         if (this.gameState === 'PLAYING') {
-            // 초 단위 델타 타임 변환. 프레임이 튈 때 값이 너무 커지지 않도록 최대치 제한
             let dt = (timestamp - this.lastTime) / 1000;
             if (dt > 0.1) dt = 0.1;
-
             this.update(dt);
         }
 
-        // 시간 갱신 및 화면 그리기는 상태에 관계없이 지속 (UI 등이 있다면 렌더링 유지 가능)
-        // 단, 일시정지 상태에서는 화면이 그대로 멈춰 있어야 하므로, update만 건너뛰고 draw는 계속 호출하여 현재 상태를 유지합니다.
         this.lastTime = timestamp;
         this.draw();
 
-        // 게임 오버 혹은 메뉴 상태가 아니면 루프 유지
         if (this.gameState !== 'MENU' && this.gameState !== 'GAMEOVER') {
             requestAnimationFrame((ts) => this.gameLoop(ts));
         }
@@ -188,7 +287,6 @@ class Game {
         if (this.waveManager) this.waveManager.update(dt, this.player);
         if (this.collisionSystem) this.collisionSystem.update(this.player, this.waveManager, this.effectPool);
 
-        // 보석 업데이트
         for (let i = this.activeGems.length - 1; i >= 0; i--) {
             const gem = this.activeGems[i];
             gem.update(dt, this.player);
@@ -198,14 +296,12 @@ class Game {
             }
         }
 
-        // 아이템 타이머 60초 주기 생성
         this.itemSpawnTimer += dt;
         if (this.itemSpawnTimer >= 60) {
             this.itemSpawnTimer -= 60;
             this.spawnRandomItem();
         }
 
-        // 시계(Stopwatch) 효과 처리
         if (this.stopwatchTimer > 0) {
             this.stopwatchTimer -= dt;
             if (this.waveManager) this.waveManager.isPaused = true;
@@ -214,7 +310,6 @@ class Game {
             }
         }
 
-        // 아이템 충돌 확인
         if (this.player) {
             for (let i = this.activeItems.length - 1; i >= 0; i--) {
                 const item = this.activeItems[i];
@@ -225,7 +320,7 @@ class Game {
                 const distSq = dx * dx + dy * dy;
                 const rSum = item.radius + this.player.radius;
 
-                if (distSq < rSum * rSum) { // 플레이어와 충돌 (획득)
+                if (distSq < rSum * rSum) {
                     this.applyItemEffect(item);
                     item.active = false;
                     this.itemPool.release(item);
@@ -236,13 +331,19 @@ class Game {
 
         if (this.effectPool) this.effectPool.update(dt);
 
-        // 폭발 애니메이션 업데이트 및 완료된 항목 제거 (메모리 누수 방지)
-        // 역순 순회: splice로 중간 항목을 제거해도 아직 처리 안 된 인덱스에 영향 없음
+        for (let i = this.activeSwordAuras.length - 1; i >= 0; i--) {
+            const aura = this.activeSwordAuras[i];
+            aura.update(dt, this.waveManager);
+            if (!aura.active) {
+                this.activeSwordAuras.splice(i, 1);
+            }
+        }
+
         for (let i = this.activeExplosions.length - 1; i >= 0; i--) {
             const exp = this.activeExplosions[i];
             exp.update(dt);
             if (exp.isFinished) {
-                this.activeExplosions.splice(i, 1); // 배열에서 제거 → GC가 수거
+                this.activeExplosions.splice(i, 1);
             }
         }
     }
@@ -259,15 +360,22 @@ class Game {
         for (let y = 0; y < this.canvas.height; y += 100) {
             this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(this.canvas.width, y); this.ctx.stroke();
         }
-        // 플레이어와 적보다 아래에 구슬, 아이템 렌더링
         for (const gem of this.activeGems) gem.draw(this.ctx);
         for (const item of this.activeItems) item.draw(this.ctx);
 
         if (this.waveManager) this.waveManager.draw(this.ctx);
         if (this.player) this.player.draw(this.ctx);
-        // 폭발 이펙트: 스프라이트/적 위, 데미지 텍스트 아래 레이어
+        for (const aura of this.activeSwordAuras) aura.draw(this.ctx);
         for (const exp of this.activeExplosions) exp.draw(this.ctx);
         if (this.effectPool) this.effectPool.draw(this.ctx);
+    }
+
+    spawnSwordAura(x, y, dirX, dirY, damage, cfg = {}) {
+        const aura = new SwordAura();
+        aura.canvasWidth = this.canvas.width;
+        aura.canvasHeight = this.canvas.height;
+        aura.spawn(x, y, dirX, dirY, 560, 0.55, damage, cfg);
+        this.activeSwordAuras.push(aura);
     }
 
     spawnGem(x, y, amount = 1) {
@@ -277,18 +385,11 @@ class Game {
         this.activeGems.push(gem);
     }
 
-    /**
-     * 지정 위치에 1회성 폭발 애니메이션을 생성한다.
-     * @param {number} x    - 폭발 중심 X
-     * @param {number} y    - 폭발 중심 Y
-     * @param {number} size - 렌더링 크기(px). 수류탄 반지름 × 2 권장.
-     */
     spawnExplosion(x, y, size = 160) {
         this.activeExplosions.push(new Explosion(x, y, size));
     }
 
     spawnRandomItem() {
-        // 아이템 타입 가중치 설정 (기본 힐/자석 비중 높게, 특수 아이템 낮게)
         const pool = [
             'heal_50', 'heal_50', 'heal_100', 'magnet',
             'bomb', 'stopwatch',
@@ -313,22 +414,19 @@ class Game {
         } else if (item.type === 'heal_100') {
             this.player.heal(this.player.maxHp);
         } else if (item.type === 'magnet') {
-            // 자석 효과: 화면상의 모든 활성화된 보석을 즉시 플레이어에게 끌려오도록 강제
             for (const gem of this.activeGems) {
                 gem.isBeingMagnetized = true;
             }
         } else if (item.type === 'bomb') {
-            // 전체 제거 (폭탄): 모든 활성화된 적 처치
             if (this.waveManager) {
                 const enemies = [...this.waveManager.activeEnemies];
                 enemies.forEach(e => e.die());
             }
         } else if (item.type === 'stopwatch') {
-            // 타임 스탑 (시계): 10초간 정지
             this.stopwatchTimer = 10;
         } else if (item.type === 'buff_both') {
-            this.player.applyTempBuff('aspd', 10, 2.0); // 10초간 공속 2배
-            this.player.applyTempBuff('mspd', 10, 1.5); // 10초간 이속 1.5배
+            this.player.applyTempBuff('aspd', 10, 2.0);
+            this.player.applyTempBuff('mspd', 10, 1.5);
         } else if (item.type === 'buff_aspd') {
             this.player.applyTempBuff('aspd', 10, 2.0);
         } else if (item.type === 'buff_mspd') {
@@ -366,7 +464,6 @@ class Game {
     updatePauseScreen() {
         const u = this.player.upgradeLevels;
 
-        // Stats
         const getStatTooltip = (type) => {
             let html = `<strong>[상세 정보]</strong><br>`;
             if (type === 'hp') html += `최대 체력과 현재 체력을 증가시킵니다.<br><br>현재 최대치: <span style="color:#f1c40f">${this.player.maxHp}</span>`;
@@ -392,67 +489,50 @@ class Game {
         addStat('HP Regen +0.1/s', u.hpregen, 'hpregen');
         document.getElementById('pause-stats-list').innerHTML = statsHtml;
 
-        // Weapons
-        let weaponsHtml = '';
-        const getTooltip = (type) => {
+        // 직업에 맞는 무기만 표시
+        const weaponsContainer = document.getElementById('pause-weapons-list');
+        weaponsContainer.innerHTML = '';
+
+        const classDef = this.selectedClass ? Config.CLASSES[this.selectedClass] : null;
+        const wpnList = classDef ? classDef.availableWeapons : Object.keys(Config.WEAPON_META);
+
+        const getWpnTooltip = (type) => {
             const w = this.player.weapons.find(w => w.type === type) || this.player.zoneWeapons.find(z => z.type === type);
             const base = Config.WEAPON_STATS[type] || {};
-
-            let dmg = type === 'Grenade' ? 20 : (base.baseDamage || 5);
+            let dmg = base.baseDamage || 5;
             let cooldown = base.cooldown || 0;
             let radius = base.projRadius || 0;
-            let pierce = base.pierce || 0;
-            let speed = base.projSpeed || 0;
-            let maxShots = 0;
-            let reloadTime = 0;
-
-            if (type === 'Grenade') { radius = 100; cooldown = 1.0; }
+            if (type === 'Grenade') { dmg = 20; radius = 70; cooldown = 3.0; }
             if (type === 'Radiation') { radius = 150; cooldown = 1.0; }
-
             if (w) {
                 dmg = w.baseDamage + (w.bonusPower || 0);
-                if (type === 'Radiation' && w.tickInterval) cooldown = w.tickInterval;
-                else if (w.cooldown) cooldown = w.cooldown / w.speedMultiplier;
-                else if (w.deployInterval) cooldown = w.deployInterval / w.speedMultiplier;
-
+                if (w.cooldown) cooldown = w.cooldown / (w.speedMultiplier || 1);
+                else if (w.deployInterval) cooldown = w.deployInterval / (w.speedMultiplier || 1);
                 if (w.projRadius) radius = w.projRadius + (w.bonusRadius || 0);
                 if (w.zoneRadius) radius = w.zoneRadius;
-                maxShots = w.maxShots || 0;
-                reloadTime = w.baseReloadTime || 0;
             }
-
             let html = `<strong>[상세 정보]</strong><br>`;
-
             html += `데미지: <span style="color:#f1c40f">${dmg + this.player.attackPower}</span><br>`;
             if (cooldown > 0) html += `공격 간격: <span style="color:#f1c40f">${cooldown.toFixed(2)}초</span><br>`;
             if (radius > 0) html += `효과 범위: <span style="color:#f1c40f">${radius}</span><br>`;
-            if (pierce > 0) html += `관통력: <span style="color:#f1c40f">${pierce}</span><br>`;
-            if (speed > 0) html += `투사체 속도: <span style="color:#f1c40f">${speed}</span><br>`;
-            if (maxShots > 0) html += `장탄수: <span style="color:#f1c40f">${maxShots}발</span> (장전 <span style="color:#f1c40f">${reloadTime.toFixed(1)}초</span>)<br>`;
-            if (type === 'Dagger') {
-                let kb = 400 + (w ? (w.bonusKnockback || 0) : 0);
-                html += `넉백 수치: <span style="color:#f1c40f">${kb}</span><br>`;
+            if (type === 'Fireball' && w) {
+                const er = (w.explosionRadius || 80) + (w.bonusExplosionRadius || 0);
+                html += `폭발 범위: <span style="color:#f1c40f">${er}</span><br>`;
             }
-
             return html;
         };
 
-        const addWpn = (name, uLevel, type) => {
+        for (const wpnKey of wpnList) {
+            const meta = Config.WEAPON_META[wpnKey];
+            if (!meta) continue;
+            const uLevel = u[meta.upgradeKey] || 0;
             if (uLevel > 0) {
                 const sp = document.createElement('span');
                 sp.className = 'pause-item tooltip';
-                sp.innerHTML = `[${uLevel}] ${name} <span class="tooltiptext">${getTooltip(type)}</span>`;
+                sp.innerHTML = `[${uLevel}] ${meta.label} <span class="tooltiptext">${getWpnTooltip(wpnKey)}</span>`;
                 weaponsContainer.appendChild(sp);
             }
-        };
-        const weaponsContainer = document.getElementById('pause-weapons-list');
-        weaponsContainer.innerHTML = ''; // Clear existing content
-
-        addWpn('대검 (Greatsword)', u.bruiser, 'Dagger');
-        addWpn('저격 (Sniper)', u.sniper, 'Sniper');
-        addWpn('샷건 (Shotgun)', u.balance, 'Shotgun');
-        addWpn('수류탄 (Grenade)', u.grenade, 'Grenade');
-        addWpn('방사능 (Radiation)', u.radiation, 'Radiation');
+        }
     }
 
     triggerLevelUp() {
@@ -465,7 +545,6 @@ class Game {
         this.gameState = 'PLAYING';
         this.lastTime = performance.now();
 
-        // 대량의 경험치를 한 번에 얻어 경험치 초과분이 많을 경우 대기 중인 여러 번의 레벨업을 순차적으로 처리
         if (this.player && this.player.exp >= this.player.expToNext) {
             this.player.levelUp();
         }
@@ -482,10 +561,13 @@ class Game {
 
     returnToMenu() {
         this.gameState = 'MENU';
+        this.selectedClass = null;
         this.uiGameOver.classList.add('hidden');
         document.getElementById('pause-screen').classList.add('hidden');
+        document.getElementById('autoaim-indicator').classList.add('hidden');
         this.uiHud.classList.add('hidden');
         this.uiArea.style.display = 'none';
         this.uiMainMenu.classList.remove('hidden');
+        this.showClassSelect();
     }
 }

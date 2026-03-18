@@ -1,4 +1,4 @@
-class Projectile {
+class WeaponProjectile {
     constructor() {
         this.active = false;
         this.x = 0;
@@ -15,6 +15,7 @@ class Projectile {
         this.originY = 0;
         this.pierce = 1;
         this.hitEnemies = [];
+        this.onDeactivate = null; // 투사체 소멸 시 호출할 콜백 (Fireball 폭발 등)
     }
 
     spawn(x, y, targetX, targetY, speed, duration, damage, radius, color, type, pierce) {
@@ -31,6 +32,7 @@ class Projectile {
         this.type = type;
         this.pierce = pierce;
         this.hitEnemies = [];
+        this.onDeactivate = null;
 
         const dx = targetX - x;
         const dy = targetY - y;
@@ -85,6 +87,7 @@ class Projectile {
                 this.pierce--;
 
                 if (this.pierce <= 0) {
+                    if (this.onDeactivate) this.onDeactivate(this.x, this.y);
                     this.active = false;
                     break;
                 }
@@ -121,8 +124,8 @@ class Weapon {
         this.type = type;
         this.cooldownTimer = 0;
 
-        this.projectilePool = new Pool(() => new Projectile(), 50);
-        this.activeProjectiles = [];
+        this.projectilePool = new Pool(() => new WeaponProjectile(), 50);
+        this.activeWeaponProjectiles = [];
 
         this.level = 1;
         this.bonusPower = 0;
@@ -186,12 +189,12 @@ class Weapon {
         }
 
         // 이미 발사된 투사체 업데이트 (재장전 중에도 멈추지 않음)
-        for (let i = this.activeProjectiles.length - 1; i >= 0; i--) {
-            const p = this.activeProjectiles[i];
+        for (let i = this.activeWeaponProjectiles.length - 1; i >= 0; i--) {
+            const p = this.activeWeaponProjectiles[i];
             p.update(dt, waveManager);
             if (!p.active) {
                 this.projectilePool.release(p);
-                this.activeProjectiles.splice(i, 1);
+                this.activeWeaponProjectiles.splice(i, 1);
             }
         }
     }
@@ -212,7 +215,7 @@ class Weapon {
                 this.shotgunSpread = Math.min(60, this.shotgunSpread + 5);
             }
         } else if (this.type === 'Sniper') {
-            this.bonusPower += 5; // Halved from 10
+            this.bonusPower += 5;
             this.speedMultiplier *= 1.1;
         }
 
@@ -223,19 +226,23 @@ class Weapon {
     }
 
     draw(ctx) {
-        for (const p of this.activeProjectiles) {
+        for (const p of this.activeWeaponProjectiles) {
             p.draw(ctx);
         }
     }
 
     findNearestEnemy(player, waveManager) {
+        // auto-aim OFF: 플레이어가 바라보는 방향의 가상 타겟 반환
+        if (player.game && !player.game.autoAimEnabled) {
+            return {
+                x: player.x + player.facingX * 500,
+                y: player.y + player.facingY * 500,
+                active: true
+            };
+        }
+
         let nearest = null;
-        let minDistSq = Infinity;
-
-        const currentMaxDistSq = this.maxDistSq || Infinity;
-
-        // 플레이어가 바라보는 방향의 각도
-        const playerAngle = Math.atan2(player.facingY, player.facingX);
+        let minDistSq = this.maxDistSq;
 
         for (const enemy of waveManager.activeEnemies) {
             if (!enemy.active) continue;
@@ -244,10 +251,7 @@ class Weapon {
             const dy = enemy.y - player.y;
             const distSq = dx * dx + dy * dy;
 
-            // 거리 필터링
-            if (distSq > currentMaxDistSq) continue;
-
-            // 각도 필터링 제거 (모든 무기가 가장 가까운 적을 무조건 타겟팅)
+            if (distSq > this.maxDistSq) continue;
 
             if (distSq < minDistSq) {
                 minDistSq = distSq;
@@ -300,7 +304,7 @@ class Weapon {
                     actualRadius, this.color, this.type, this.pierce
                 );
                 p.bonusKnockback = this.bonusKnockback;
-                this.activeProjectiles.push(p);
+                this.activeWeaponProjectiles.push(p);
             }
         } else {
             const p = this.projectilePool.get();
@@ -311,7 +315,7 @@ class Weapon {
                 actualRadius, this.color, this.type, this.pierce
             );
             p.bonusKnockback = this.bonusKnockback;
-            this.activeProjectiles.push(p);
+            this.activeWeaponProjectiles.push(p);
         }
     }
 }
