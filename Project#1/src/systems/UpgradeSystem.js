@@ -5,12 +5,12 @@ class UpgradeSystem {
 
         // 스탯 버튼만 고정 바인딩 (무기 버튼은 trigger() 시 동적 생성)
         const statBindings = {
-            'btn-stat-hp':      'hp',
-            'btn-stat-atk':     'atk',
-            'btn-stat-def':     'def',
-            'btn-stat-spd':     'spd',
-            'btn-stat-aspd':    'aspd',
-            'btn-stat-magnet':  'magnet',
+            'btn-stat-hp': 'hp',
+            'btn-stat-atk': 'atk',
+            'btn-stat-def': 'def',
+            'btn-stat-spd': 'spd',
+            'btn-stat-aspd': 'aspd',
+            'btn-stat-magnet': 'magnet',
             'btn-stat-hpregen': 'hpregen',
         };
         for (const [id, key] of Object.entries(statBindings)) {
@@ -48,13 +48,13 @@ class UpgradeSystem {
         };
 
         const u = player.upgradeLevels;
-        updateBtn('btn-stat-hp',      'Max HP +10',           u.hp,      getStatTooltip('hp'));
-        updateBtn('btn-stat-atk',     'Attack Power +2.5',    u.atk,     getStatTooltip('atk'));
-        updateBtn('btn-stat-def',     'Defense +1',           u.def,     getStatTooltip('def'));
-        updateBtn('btn-stat-spd',     'Move Speed +25',       u.spd,     getStatTooltip('spd'));
-        updateBtn('btn-stat-aspd',    'Attack Speed +5%',     u.aspd,    getStatTooltip('aspd'));
-        updateBtn('btn-stat-magnet',  'Magnet Radius +30',    u.magnet,  getStatTooltip('magnet'));
-        updateBtn('btn-stat-hpregen', 'HP Regen +0.1/s',      u.hpregen, getStatTooltip('hpregen'));
+        updateBtn('btn-stat-hp', 'Max HP +10', u.hp, getStatTooltip('hp'));
+        updateBtn('btn-stat-atk', 'Attack Power +2.5', u.atk, getStatTooltip('atk'));
+        updateBtn('btn-stat-def', 'Defense +1', u.def, getStatTooltip('def'));
+        updateBtn('btn-stat-spd', 'Move Speed +25', u.spd, getStatTooltip('spd'));
+        updateBtn('btn-stat-aspd', 'Attack Speed +5%', u.aspd, getStatTooltip('aspd'));
+        updateBtn('btn-stat-magnet', 'Magnet Radius +30', u.magnet, getStatTooltip('magnet'));
+        updateBtn('btn-stat-hpregen', 'HP Regen +0.1/s', u.hpregen, getStatTooltip('hpregen'));
 
         // 직업에 맞는 무기 버튼 동적 생성
         const container = document.getElementById('weapon-upgrade-buttons');
@@ -102,7 +102,7 @@ class UpgradeSystem {
         let maxShots = 0;
         let reloadTime = 0;
 
-        if (type === 'Grenade')   { dmg = 20; radius = 70; cooldown = 3.0; }
+        if (type === 'Grenade') { dmg = 20; radius = 70; cooldown = 3.0; }
         if (type === 'Radiation') { radius = 150; cooldown = 1.0; }
         if (type === 'Greatsword') { radius = base.attackRadius || 180; }
 
@@ -193,6 +193,7 @@ class UpgradeSystem {
             case 'spd':
                 u.spd++;
                 this.playerRef.moveSpeed += 25;
+                // magnetRadius 분리됨
                 break;
             case 'magnet':
                 u.magnet++;

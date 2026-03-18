@@ -23,11 +23,13 @@ class Game {
         this.player = null;
         this.activeGems = [];
         this.activeItems = [];
-        this.activeExplosions  = [];
-        this.activeSwordAuras  = [];
+        this.activeExplosions = [];
+        this.activeSwordAuras = [];
 
         this.itemSpawnTimer = 0;
         this.stopwatchTimer = 0;
+        this.isDevMode = false; // 개발자 모드 상태
+        this.expMultiplier = 1; // 경험치 배율 (기본 x1)
 
         // UI 요소 바인딩
         this.uiMainMenu = document.getElementById('main-menu');
@@ -91,6 +93,46 @@ class Game {
         document.getElementById('autoaim-indicator').addEventListener('click', () => {
             if (this.gameState === 'PLAYING') this.toggleAutoAim();
         });
+        const btnDevMode = document.getElementById('btn-dev-mode');
+        const devTools = document.getElementById('dev-tools');
+        const btnExpBoost = document.getElementById('btn-exp-boost');
+        const btnLevelUp = document.getElementById('btn-force-level-up');
+
+        if (btnDevMode) {
+            btnDevMode.addEventListener('click', () => {
+                this.isDevMode = !this.isDevMode;
+                window.isDevMode = this.isDevMode;
+                btnDevMode.innerText = `Dev Mode: ${this.isDevMode ? 'ON' : 'OFF'}`;
+
+                if (this.isDevMode) {
+                    btnDevMode.classList.add('active');
+                    devTools.classList.remove('hidden');
+                } else {
+                    btnDevMode.classList.remove('active');
+                    devTools.classList.add('hidden');
+                }
+            });
+        }
+
+        if (btnExpBoost) {
+            btnExpBoost.addEventListener('click', () => {
+                const multipliers = [1, 2, 5, 10];
+                let currentIndex = multipliers.indexOf(this.expMultiplier);
+                this.expMultiplier = multipliers[(currentIndex + 1) % multipliers.length];
+                btnExpBoost.innerText = `Exp: x${this.expMultiplier}`;
+                console.log('Exp Multiplier set to:', this.expMultiplier);
+            });
+        }
+
+        if (btnLevelUp) {
+            btnLevelUp.addEventListener('click', () => {
+                if (this.player && this.gameState === 'PLAYING') {
+                    // 다음 레벨까지 필요한 경험치를 즉시 획득하여 레벨업 트리거
+                    const needed = this.player.expToNext - this.player.exp;
+                    this.player.gainExp(needed);
+                }
+            });
+        }
 
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Escape') {
@@ -330,7 +372,7 @@ class Game {
 
     spawnSwordAura(x, y, dirX, dirY, damage, cfg = {}) {
         const aura = new SwordAura();
-        aura.canvasWidth  = this.canvas.width;
+        aura.canvasWidth = this.canvas.width;
         aura.canvasHeight = this.canvas.height;
         aura.spawn(x, y, dirX, dirY, 560, 0.55, damage, cfg);
         this.activeSwordAuras.push(aura);

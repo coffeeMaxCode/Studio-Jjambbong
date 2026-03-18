@@ -3,14 +3,14 @@ class Player {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.radius = 26; // Tight fit to visible character sprite (81x108px rendered)
+        this.radius = 26; // Tight fit to visible character sprite
 
         this.img = new Image();
         this.img.src = 'src/img/character001.png';
 
         // 기본 스탯
         this.baseMaxHp = 100;
-        this.baseAttackPower = 2.5; // Halved from 5
+        this.baseAttackPower = 2.5;
         this.baseDefense = 0;
         this.baseMoveSpeed = 150;
         this.baseAttackSpeed = 1.0;
@@ -37,15 +37,13 @@ class Player {
         this.level = 1;
         this.exp = 0;
         this.expToNext = 10;
-        this.magnetRadius = 200; // Doubled from 100
+        this.magnetRadius = 200;
 
-        // 무기 목록 (일반 투사체 무기 배열)
+        // 무기 목록
         this.weapons = [];
-
-        // 장판 무기 목록 (ZoneWeapon 인스턴스 배열)
         this.zoneWeapons = [];
 
-        // 바라보는 방향 (기본값: 오른쪽)
+        // 바라보는 방향
         this.facingX = 1;
         this.facingY = 0;
 
@@ -98,13 +96,13 @@ class Player {
         this.x += axis.x * effectiveMoveSpeed * dt;
         this.y += axis.y * effectiveMoveSpeed * dt;
 
-        // 바라보는 방향 업데이트 (정지 시 마지막 방향 유지)
+        // 바라보는 방향 업데이트
         if (axis.x !== 0 || axis.y !== 0) {
             this.facingX = axis.x;
             this.facingY = axis.y;
         }
 
-        // 맵 경계 제한 (Canvas 1280x720)
+        // 맵 경계 제한
         const padding = this.radius;
         if (this.x < padding) this.x = padding;
         if (this.x > 1280 - padding) this.x = 1280 - padding;
@@ -337,6 +335,7 @@ class Player {
         if (this.isDead) return;
 
         // 장판 무기는 플레이어/적 뒤에 렌더링
+        // 장판 무기 렌더링
         for (const zw of this.zoneWeapons) {
             zw.draw(ctx);
         }
@@ -346,6 +345,7 @@ class Player {
         const spriteHandled = this.weapons.some(w => w.handlesSprite);
         const isMage = this.game && this.game.selectedClass === 'Mage';
 
+<<<<<<< HEAD
         if (isMage) {
             // 마법사 스프라이트 (wizard_motion.png 2×4 스프라이트시트)
             if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer * 10) % 2 === 0) {
@@ -384,6 +384,36 @@ class Player {
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.restore();
+=======
+        // 플레이어 스프라이트
+        if (this.img.complete && this.img.naturalWidth > 0) {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            if (this.facingX < 0) {
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(this.img, -40.5, -54, 81, 108);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.globalAlpha = 1.0;
+
+        // DEBUG: Hitbox visualization
+        if (this.game && this.game.isDevMode) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+>>>>>>> 93194716593d07c4ab973b3138bcf7fbae4e3aa9
 
         // 무기 렌더링 (GreatswordWeapon은 여기서 캐릭터 스프라이트도 함께 그림)
         for (const w of this.weapons) {
@@ -393,16 +423,10 @@ class Player {
 
     takeDamage(amount) {
         if (this.invincibleTimer > 0 || this.isDead) return;
-
-        // 방어력 감소 (최소 1 데미지)
         const finalDamage = Math.max(1, amount - this.defense);
         this.hp -= finalDamage;
-
-        // 피격 무적 1초
         this.invincibleTimer = 1.0;
-
         this.updateHpUI();
-
         if (this.hp <= 0) {
             this.die();
         }
@@ -435,7 +459,9 @@ class Player {
 
     gainExp(amount) {
         if (this.isDead) return;
-        this.exp += amount;
+        // 개발자 모드 경험치 부스트 적용
+        const multipliedAmount = amount * (this.game.expMultiplier || 1);
+        this.exp += multipliedAmount;
         if (this.exp >= this.expToNext) {
             this.levelUp();
         }
@@ -445,13 +471,10 @@ class Player {
     levelUp() {
         this.exp -= this.expToNext;
         this.level++;
-        this.expToNext = Math.floor(this.expToNext * 1.25); // 기존 50% 증가에서 25%로 완화
+        this.expToNext = Math.floor(this.expToNext * 1.25);
         document.getElementById('level-display').innerText = `Lv: ${this.level}`;
         if (this.game) {
             this.game.triggerLevelUp();
-        }
-        if (this.exp >= this.expToNext) {
-            // 연속 레벨업은 UpgradeSystem에서 처리
         }
     }
 
