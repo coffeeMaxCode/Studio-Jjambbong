@@ -10,23 +10,37 @@
 
 <body>
     <div id="game-container">
-        <!-- 플레이 영역: 1280x720 (기존 전체 화면 크기) -->
+        <!-- 플레이 영역: 1280x720 -->
         <div id="canvas-area">
             <canvas id="game-canvas" width="1280" height="720"></canvas>
-            <!-- UI 오버레이 (메뉴 / 게임 오버) -->
+            <!-- Auto-aim 인디케이터 (인게임 HUD) -->
+            <div id="autoaim-indicator" class="hidden">
+                AUTO-AIM: <span id="autoaim-status" class="on">ON</span>
+                <span id="autoaim-hint">&nbsp;[Q]</span>
+            </div>
+            <!-- UI 오버레이 -->
             <div id="ui-layer">
+                <!-- ── 메인 메뉴: 2단계 선택 ── -->
                 <div id="main-menu" class="screen">
-                    <h1>Survive the Night</h1>
-                    <p>Choose your starting weapon:</p>
-                    <div class="weapon-choices">
-                        <button id="btn-sniper">저격 (Sniper)</button>
-                        <button id="btn-balance">샷건 (Shotgun)</button>
-                        <button id="btn-bruiser">대검 (Greatsword)</button>
-                        <button id="btn-start-aura">방사능 (Radiation)</button>
-                        <button id="btn-start-targeted">수류탄 (Grenade)</button>
+                    <!-- 1단계: 직업 선택 -->
+                    <div id="class-select-step">
+                        <h1>Survive the Night</h1>
+                        <p class="menu-subtitle">직업을 선택하세요</p>
+                        <div class="class-choices" id="class-choices-container">
+                            <!-- Game.js가 Config.CLASSES로 동적 생성 -->
+                        </div>
+                    </div>
+                    <!-- 2단계: 무기 선택 -->
+                    <div id="weapon-select-step" class="hidden">
+                        <h2 id="weapon-select-title">무기를 선택하세요</h2>
+                        <div class="weapon-choices" id="weapon-choices-dynamic">
+                            <!-- Game.js가 선택된 직업에 따라 동적 생성 -->
+                        </div>
+                        <button id="btn-back-to-class" class="btn-back">← 직업 선택으로</button>
                     </div>
                 </div>
 
+                <!-- ── 레벨업 화면 ── -->
                 <div id="levelup-screen" class="screen hidden">
                     <h2>Level Up!</h2>
                     <div class="upgrade-container">
@@ -42,15 +56,14 @@
                         </div>
                         <div class="upgrade-column">
                             <h3>Weapons</h3>
-                            <button id="btn-stat-wpn-bruiser">대검 (Greatsword)</button>
-                            <button id="btn-stat-wpn-sniper">저격 (Sniper)</button>
-                            <button id="btn-stat-wpn-balance">샷건 (Shotgun)</button>
-                            <button id="btn-stat-zone-targeted">수류탄 (Grenade)</button>
-                            <button id="btn-stat-zone-aura">방사능 (Radiation)</button>
+                            <div id="weapon-upgrade-buttons">
+                                <!-- UpgradeSystem이 직업에 맞는 버튼을 동적 생성 -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- ── 게임 오버 ── -->
                 <div id="gameover-screen" class="screen hidden">
                     <h2>Game Over</h2>
                     <p>You survived for <span id="final-time">00:00</span></p>
@@ -65,6 +78,7 @@
                     </div>
                 </div>
 
+                <!-- ── 일시정지 ── -->
                 <div id="pause-screen" class="screen hidden">
                     <h2>Paused</h2>
                     <div class="upgrade-container">
@@ -87,7 +101,7 @@
             </div>
         </div>
 
-        <!-- 하단 UI 영역: 별도 추가 공간 (상태창) -->
+        <!-- 하단 UI 영역 -->
         <div id="ui-area">
             <div id="dev-mode-toggle-container">
                 <button id="btn-dev-mode">Dev Mode: OFF</button>
@@ -137,6 +151,10 @@
     <script src="src/entities/Explosion.js"></script>
     <script src="src/entities/ZoneWeapon.js"></script>
     <script src="src/entities/Weapon.js"></script>
+    <script src="src/entities/WizardWeapons.js"></script>
+    <script src="src/entities/Projectile.js"></script>
+    <script src="src/entities/SwordAura.js"></script>
+    <script src="src/entities/GreatswordWeapon.js"></script>
     <script src="src/entities/Item.js"></script>
     <script src="src/entities/Player.js"></script>
     <script src="src/entities/Enemy.js"></script>

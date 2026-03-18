@@ -20,7 +20,8 @@ body {
 #game-container {
     position: relative;
     width: 1280px;
-    height: 880px; /* 플레이 720px + UI 160px */
+    height: 880px;
+    /* 플레이 720px + UI 160px */
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     background-color: #2c3e50;
     display: flex;
@@ -30,7 +31,8 @@ body {
 
 #canvas-area {
     width: 100%;
-    height: 720px; /* 기존 전체 화면 크기와 동일한 플레이 영역 */
+    height: 720px;
+    /* 기존 전체 화면 크기와 동일한 플레이 영역 */
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
@@ -38,11 +40,13 @@ body {
 
 #ui-area {
     width: 100%;
-    height: 160px; /* 하단 추가 UI 영역 */
+    height: 160px;
+    /* 하단 추가 UI 영역 */
     background-color: #1a1a1a;
     border-top: 4px solid #7f8c8d;
     position: relative;
-    display: none; /* JS에서 게임 시작 시 표시 */
+    display: none;
+    /* JS에서 게임 시작 시 표시 */
     flex-shrink: 0;
 }
 
@@ -97,7 +101,8 @@ canvas {
     padding: 10px;
 }
 
-#hp-bar-container, #exp-bar-container {
+#hp-bar-container,
+#exp-bar-container {
     width: 500px;
     height: 24px;
     background-color: #333;
@@ -157,7 +162,8 @@ canvas {
     color: #ecf0f1;
 }
 
-#level-display, #time-display {
+#level-display,
+#time-display {
     font-size: 28px;
     font-weight: bold;
     text-shadow: 2px 2px 0 #000;
@@ -181,7 +187,7 @@ canvas {
     position: absolute;
     top: 20px;
     right: 20px;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     padding: 10px;
     border-radius: 8px;
 }
@@ -271,7 +277,8 @@ button:hover {
     padding: 12px;
     position: absolute;
     z-index: 1000;
-    top: 110%; /* Changed from bottom: 110% to top: 110% */
+    top: 110%;
+    /* Changed from bottom: 110% to top: 110% */
     left: 50%;
     transform: translateX(-50%);
     opacity: 0;
@@ -282,7 +289,7 @@ button:hover {
     font-weight: normal;
     text-transform: none;
     letter-spacing: normal;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
 }
 
 .tooltip:hover {
@@ -314,7 +321,9 @@ button:hover {
     gap: 8px;
 }
 
-#btn-dev-mode, #btn-exp-boost, #btn-force-level-up {
+#btn-dev-mode,
+#btn-exp-boost,
+#btn-force-level-up {
     padding: 8px 12px;
     font-size: 14px;
     background-color: #34495e;
@@ -336,7 +345,9 @@ button:hover {
     background-color: #8e44ad;
 }
 
-#btn-dev-mode:hover, #btn-exp-boost:hover, #btn-force-level-up:hover {
+#btn-dev-mode:hover,
+#btn-exp-boost:hover,
+#btn-force-level-up:hover {
     filter: brightness(1.2);
     transform: scale(1.05);
 }

@@ -69,10 +69,8 @@ class ZoneWeapon {
             this.zoneRadius += 7;
             this.tickInterval *= 0.9; // Match the 10% tooltip reduction
             // 오라 반경 즉시 반영 및 틱 갱신
-            if (this.activeZones[0]) {
-                this.activeZones[0].radius = this.zoneRadius;
-                this.activeZones[0].tickInterval = this.tickInterval;
-            }
+            this.activeZones[0].radius = this.zoneRadius;
+            this.activeZones[0].tickInterval = this.tickInterval;
         }
     }
 
@@ -177,7 +175,6 @@ class ZoneWeapon {
         zone.damage = this.baseDamage + player.attackPower;
         zone.followPlayer = false;
         zone.color = 'rgba(255,100,0,0.6)'; // 폭발이므로 좀 더 진하게
-        zone.hitEnemies = [];
         this.activeZones.push(zone);
 
         // 폭발 애니메이션 생성: 장판 반지름 × 2 크기로 스폰
